@@ -1,0 +1,19 @@
+# Python virtual environment
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Tooling / OS
+.DS_Store
+.env
+.env.*
+
+# Streamlit and IDE caches
+.streamlit/secrets.toml
+.vscode/
+.ipynb_checkpoints/
