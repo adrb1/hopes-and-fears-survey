@@ -119,12 +119,34 @@ components.html(
 )
 
 # Database config
-# DB_USER = "ai_agents_survey"
-# DB_PATH = os.getenv("HOPES_FEARS_DB", "sqlite:///./survey.db")
-# engine = create_engine(DB_PATH, connect_args={"check_same_thread": False} if "sqlite" in DB_PATH else {})
+# Priority order:
+# 1. Streamlit secrets: DB_URL or [database].url
+# 2. Environment variables: DB_URL or HOPES_FEARS_DB_URL
+# 3. Local fallback: SQLite database for development/demo use
+def get_database_url():
+    try:
+        if "DB_URL" in st.secrets:
+            return st.secrets["DB_URL"]
+        if "database" in st.secrets and "url" in st.secrets["database"]:
+            return st.secrets["database"]["url"]
+    except Exception:
+        pass
 
-DB_URL = "mysql+mysqlconnector://aligniverse_team:equality$$@127.0.0.1:3306/ai_agents_survey"
-engine = create_engine(DB_URL, pool_pre_ping=True)
+    return (
+        os.getenv("DB_URL")
+        or os.getenv("HOPES_FEARS_DB_URL")
+        or "sqlite:///./survey.db"
+    )
+
+
+DB_URL = get_database_url()
+IS_SQLITE = DB_URL.startswith("sqlite")
+engine = create_engine(
+    DB_URL,
+    pool_pre_ping=not IS_SQLITE,
+    connect_args={"check_same_thread": False} if IS_SQLITE else {},
+)
+DB_INIT_ERROR = None
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -276,10 +298,16 @@ class ParticipantTaskPairChoices(Base):
     choice_made = Column(Enum("left", "right", "skip", name="participant_task_pair_choices_choice_made_enum"), nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow, server_default=text("CURRENT_TIMESTAMP"))
 
-Base.metadata.create_all(bind=engine)
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as exc:
+    DB_INIT_ERROR = str(exc).splitlines()[0]
 
 
 def ensure_participant_attitudes_after_columns():
+    if DB_INIT_ERROR is not None:
+        return
+
     required_columns = {
         "fear_rating_after": "SMALLINT",
         "fear_text_after": "TEXT",
@@ -505,6 +533,8 @@ def load_task_pairs():
                     "right": {"task_id": right.task_id, "title": right.task_name, "description": right.task_description or ""}
                 })
         return result
+    except Exception:
+        return []
     finally:
         db.close()
 
@@ -561,6 +591,8 @@ def load_tasks(occupation_name=None):
             }
             for t in tasks
         ]
+    except Exception:
+        return []
     finally:
         db.close()
 
@@ -576,6 +608,8 @@ def load_job_roles():
             .all()
         )
         return [r.occupation_name for r in rows if r.occupation_name]
+    except Exception:
+        return []
     finally:
         db.close()
 
@@ -587,6 +621,10 @@ def get_runtime_db_status():
         "database": "unknown",
         "error": "",
     }
+    if DB_INIT_ERROR is not None:
+        status["error"] = DB_INIT_ERROR
+        return status
+
     try:
         with engine.connect() as conn:
             status["connected"] = True

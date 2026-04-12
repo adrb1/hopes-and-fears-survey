@@ -12,6 +12,7 @@ __pycache__/
 .DS_Store
 .env
 .env.*
+survey.db
 
 # Streamlit and IDE caches
 .streamlit/secrets.toml

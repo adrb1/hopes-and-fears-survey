@@ -53,29 +53,72 @@ streamlit run app.py
 
 ## Database Configuration
 
-The app currently uses a hardcoded MySQL URL in app.py.
+The app reads its database URL from Streamlit secrets or environment variables.
 
 Current behavior:
 
 - SQLAlchemy engine is created at startup.
 - ORM tables are auto-created with Base.metadata.create_all(bind=engine).
 - Some migration-like logic is applied at runtime for participant_attitudes after-columns.
+- If no DB URL is provided, the app falls back to a local SQLite file: survey.db.
 
 Important notes:
 
+- For production or Streamlit deployment, provide a real external database URL.
 - Ensure your MySQL service is running and the target database exists.
-- Ensure credentials, host, and port in app.py match your local environment.
-- If DB is unavailable, parts of the app can still render with fallback/mock task content, but write operations that require DB will fail.
+- Ensure credentials, host, and port in your secrets or environment variables are correct.
+- Local SQLite fallback is suitable for demos and local development, not long-term survey data collection.
 
 Recommended local practice:
 
-- Move DB URL to environment variables (instead of hardcoded secrets).
-- Example pattern:
+- Put DB credentials in one of these places:
+
+```toml
+# .streamlit/secrets.toml
+DB_URL = "mysql+mysqlconnector://USERNAME:PASSWORD@HOST:3306/DATABASE_NAME"
+```
 
 ```python
 import os
 DB_URL = os.getenv("HOPES_FEARS_DB_URL")
 ```
+
+## Deploy To Streamlit Community Cloud
+
+1. Push the latest code to GitHub.
+
+2. Confirm these files exist in the repo:
+
+- app.py
+- requirements.txt
+
+3. Go to Streamlit Community Cloud:
+
+- https://share.streamlit.io/
+
+4. Create a new app and connect your GitHub repository.
+
+5. Use these settings:
+
+- Repository: your GitHub repo
+- Branch: main
+- Main file path: app.py
+
+6. In App settings -> Secrets, add your production database URL, for example:
+
+```toml
+DB_URL = "mysql+mysqlconnector://USERNAME:PASSWORD@HOST:3306/DATABASE_NAME"
+```
+
+7. Deploy the app. Streamlit will install packages from requirements.txt and publish a URL like:
+
+- https://your-app-name.streamlit.app/
+
+## Deployment Notes
+
+- If your MySQL database is only available on 127.0.0.1, Streamlit Cloud will not be able to reach it.
+- For cloud deployment, you need a publicly reachable or otherwise network-accessible database service.
+- If you only want to demo the UI, the SQLite fallback can run without external DB secrets, but data persistence will be limited.
 
 ## Survey Flow (High Level)
 
