@@ -634,6 +634,12 @@ def get_runtime_db_status():
         status["error"] = str(exc).splitlines()[0]
     return status
 
+
+def get_runtime_db_display_text(status):
+    if status["connected"]:
+        return f"CONNECTED ({status['database']})"
+    return "DISCONNECTED"
+
 # Initialization for session data
 if "page" not in st.session_state:
     st.session_state.page = 0
@@ -931,11 +937,7 @@ _db_pairs_preview = load_task_pairs()
 _runtime_db = get_runtime_db_status()
 _task_gallery_source = "DB" if _db_tasks else "MOCK"
 _task_pairs_source = "DB" if _db_pairs_preview else "MOCK"
-_db_state_text = (
-    f"CONNECTED ({_runtime_db['database']})"
-    if _runtime_db["connected"]
-    else f"DISCONNECTED ({_runtime_db['error'] or 'unavailable'})"
-)
+_db_state_text = get_runtime_db_display_text(_runtime_db)
 _db_state_bg = "#ecfdf5" if _runtime_db["connected"] else "#fef2f2"
 _db_state_border = "#16a34a" if _runtime_db["connected"] else "#dc2626"
 
