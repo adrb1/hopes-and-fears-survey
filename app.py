@@ -1,10 +1,8 @@
 import os
 import threading
-import time
 from datetime import datetime
 import streamlit as st
 import streamlit.components.v1 as components
-from urllib.parse import quote_plus
 from sqlalchemy import create_engine, Column, Integer, BigInteger, SmallInteger, String, Text, Boolean, DateTime, ForeignKey, Enum, text, inspect
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
@@ -1228,11 +1226,18 @@ elif st.session_state.page == 1:
     
     # Job Role selection
     st.markdown("**What is your occupation?**")
+    job_role_options = [""] + job_roles
     job_role_index = 0
-    if st.session_state.job_role in job_roles:
-        job_role_index = job_roles.index(st.session_state.job_role)
+    if st.session_state.job_role in job_role_options:
+        job_role_index = job_role_options.index(st.session_state.job_role)
 
-    job_role = st.selectbox("Select your job role:", job_roles, index=job_role_index, key="job_input")
+    job_role = st.selectbox(
+        "Select your job role:",
+        job_role_options,
+        index=job_role_index,
+        format_func=lambda x: "Please select your job role" if x == "" else x,
+        key="job_input",
+    )
     
     # Navigation
     col_prev1, col_dummy1, col_next1 = st.columns([0.2, 0.65, 0.15])
@@ -1371,11 +1376,11 @@ elif st.session_state.page == 3:
         st.markdown("**To what extent do you believe that your AI Agents fear is shared by most people?**")
         
         # Fear sharing - slider
-        fear_sharing_options = ["Not at all", "Rarely", "Occasionally", "Moderately", "Often", "Very often", "Almost always"]
+        fear_sharing_options = ["", "Not at all", "Rarely", "Occasionally", "Moderately", "Often", "Very often", "Almost always"]
         fears_shared = st.select_slider(
             label="Fear shared",
             options=fear_sharing_options,
-            value=st.session_state.fears_shared if st.session_state.fears_shared else "Moderately",
+            value=st.session_state.fears_shared if st.session_state.fears_shared in fear_sharing_options else "",
             label_visibility="collapsed",
             key="fears_shared_input"
         )
@@ -1426,11 +1431,11 @@ elif st.session_state.page == 3:
         st.markdown("**To what extent do you believe that your AI Agents hopes are shared by most people?**")
         
         # Hope sharing - slider
-        hope_sharing_options = ["Not at all", "Rarely", "Occasionally", "Moderately", "Often", "Very often", "Almost always"]
+        hope_sharing_options = ["", "Not at all", "Rarely", "Occasionally", "Moderately", "Often", "Very often", "Almost always"]
         hopes_shared = st.select_slider(
             label="Hope shared",
             options=hope_sharing_options,
-            value=st.session_state.hopes_shared if st.session_state.hopes_shared else "Moderately",
+            value=st.session_state.hopes_shared if st.session_state.hopes_shared in hope_sharing_options else "",
             label_visibility="collapsed",
             key="hopes_shared_input"
         )
@@ -1452,6 +1457,10 @@ elif st.session_state.page == 3:
                 st.error("Hopes: Please enter at least 70 characters")
             elif len(hopes_text) > 350:
                 st.error("Hopes: Your response exceeds 350 characters")
+            elif not fears_shared:
+                st.error("Fears: Please select how widely your fear is shared")
+            elif not hopes_shared:
+                st.error("Hopes: Please select how widely your hope is shared")
             else:
                 st.session_state.fears_rating = fears_rating
                 st.session_state.hopes_rating = hopes_rating
@@ -1787,6 +1796,7 @@ elif st.session_state.page == 5:
 
 
     age_options = [
+        "",
         "Under 18",
         "18-24 years old",
         "25-34 years old",
@@ -1795,20 +1805,50 @@ elif st.session_state.page == 5:
         "55-64 years old",
         "65+ years old",
     ]
-    gender_options = ["Female", "Male", "Nonbinary", "Transgender", "Prefer not to say", "Other"]
-    ethnicity_options = ["American Indian or Alaska Native", "Asian or Pacific Islander", "Black or African American", "Hispanic or Latinx", "Middle Eastern or North African", "White", "Multiethnic", "Other"]
-    colour_options = ["Red", "Orange", "Yellow", "Green", "Blue", "Indigo", "Violet", "Black", "White"]
-    education_options = ["Less than High School", "High School", "Some college (no degree)", "Technical Certification", "Associate degree (2-year)", "Bachelor's degree (4-year)", "Master's degree", "Doctoral degree", "Professional degree (JD, MD)", "Other"]
+    gender_options = ["", "Female", "Male", "Nonbinary", "Transgender", "Prefer not to say", "Other"]
+    ethnicity_options = ["", "American Indian or Alaska Native", "Asian or Pacific Islander", "Black or African American", "Hispanic or Latinx", "Middle Eastern or North African", "White", "Multiethnic", "Other"]
+    colour_options = ["", "Red", "Orange", "Yellow", "Green", "Blue", "Indigo", "Violet", "Black", "White"]
+    education_options = ["", "Less than High School", "High School", "Some college (no degree)", "Technical Certification", "Associate degree (2-year)", "Bachelor's degree (4-year)", "Master's degree", "Doctoral degree", "Professional degree (JD, MD)", "Other"]
 
-    st.selectbox("What is your age group?", age_options, index=age_options.index(st.session_state.age_group) if st.session_state.age_group in age_options else 0, key="age_group")
-    gender_selected = st.selectbox("What is your gender identity?", gender_options, index=gender_options.index(st.session_state.gender_identity) if st.session_state.gender_identity in gender_options else 0, key="gender_identity")
+    st.selectbox(
+        "What is your age group?",
+        age_options,
+        index=age_options.index(st.session_state.age_group) if st.session_state.age_group in age_options else 0,
+        format_func=lambda x: "Please select" if x == "" else x,
+        key="age_group",
+    )
+    gender_selected = st.selectbox(
+        "What is your gender identity?",
+        gender_options,
+        index=gender_options.index(st.session_state.gender_identity) if st.session_state.gender_identity in gender_options else 0,
+        format_func=lambda x: "Please select" if x == "" else x,
+        key="gender_identity",
+    )
     if gender_selected == "Other":
         st.text_input("Please specify", value=st.session_state.gender_other, key="gender_other")
-    ethnicity_selected = st.selectbox("Which ethnicity best describes you?", ethnicity_options, index=ethnicity_options.index(st.session_state.ethnicity) if st.session_state.ethnicity in ethnicity_options else 0, key="ethnicity")
+    ethnicity_selected = st.selectbox(
+        "Which ethnicity best describes you?",
+        ethnicity_options,
+        index=ethnicity_options.index(st.session_state.ethnicity) if st.session_state.ethnicity in ethnicity_options else 0,
+        format_func=lambda x: "Please select" if x == "" else x,
+        key="ethnicity",
+    )
     if ethnicity_selected == "Other":
         st.text_input("Please specify", value=st.session_state.ethnicity_other, key="ethnicity_other")
-    st.selectbox("What is your favourite colour? (This is an attention check question. Please choose red.)", colour_options, index=colour_options.index(st.session_state.favourite_colour) if st.session_state.favourite_colour in colour_options else 0, key="favourite_colour")
-    education_selected = st.selectbox("What is your highest level of education?", education_options, index=education_options.index(st.session_state.education_level) if st.session_state.education_level in education_options else 0, key="education_level")
+    st.selectbox(
+        "What is your favourite colour? (This is an attention check question. Please choose red.)",
+        colour_options,
+        index=colour_options.index(st.session_state.favourite_colour) if st.session_state.favourite_colour in colour_options else 0,
+        format_func=lambda x: "Please select" if x == "" else x,
+        key="favourite_colour",
+    )
+    education_selected = st.selectbox(
+        "What is your highest level of education?",
+        education_options,
+        index=education_options.index(st.session_state.education_level) if st.session_state.education_level in education_options else 0,
+        format_func=lambda x: "Please select" if x == "" else x,
+        key="education_level",
+    )
     if education_selected == "Other":
         st.text_input("Please specify", value=st.session_state.education_other, key="education_other")
     
@@ -1869,15 +1909,16 @@ elif st.session_state.page == 6:
     </div>
     """, unsafe_allow_html=True)
 
-    likert_options = ["Strongly Disagree", "Disagree", "Somewhat Disagree", "Neutral", "Somewhat Agree", "Agree", "Strongly Agree"]
-    likert_values = {opt: i for i, opt in enumerate(likert_options)}
+    likert_scale_options = ["Strongly Disagree", "Disagree", "Somewhat Disagree", "Neutral", "Somewhat Agree", "Agree", "Strongly Agree"]
+    likert_options = [""] + likert_scale_options
+    likert_values = {opt: i for i, opt in enumerate(likert_scale_options)}
 
     # Initialize likelihood question states
     for key in ["smart_devices", "ai_help", "ai_tech_id", "ai_skillful", "ai_learning",
                 "ai_efficiency", "ai_eval", "ai_solution", "attention_check", "ai_choice",
                 "ethical", "privacy", "ai_abuse"]:
         if key not in st.session_state:
-            st.session_state[key] = likert_options[3]
+            st.session_state[key] = ""
 
     # Maintain page-level index to show one question per sub-page
     if "page6_question_index" not in st.session_state:
@@ -1889,6 +1930,7 @@ elif st.session_state.page == 6:
             "text": "Which description best fits your occupation?",
             "key": "occupation_fit_radio",
             "options": [
+                "",
                 "My occupation requires minimal prior experience or training, potentially needs a high school diploma or GED, and typically involves a brief training period of a few days to a few months.",
                 "My occupation requires a high school diploma, several months to a year of training, and often involve assisting others.",
                 "My occupation requires vocational training, a college degree, or specialized certifications, and typically involves complex problem-solving, creativity, or advanced technical skills."
@@ -1916,14 +1958,15 @@ elif st.session_state.page == 6:
     st.markdown(f"**Question {idx + 1}/{len(page6_questions)}**")
     if current_question["type"] == "occupation_fit":
         st.markdown(f"**{current_question['text']}**")
-        st.radio(
+        st.selectbox(
             "Select the best fit:",
             current_question["options"],
+            format_func=lambda x: "Please select" if x == "" else x,
             key="occupation_fit_radio"
         )
     else:
         if current_question["key"] not in st.session_state:
-            st.session_state[current_question["key"]] = likert_options[3]
+            st.session_state[current_question["key"]] = ""
 
         display_text = current_question["text"]
         if current_question["key"] == "attention_check":
@@ -1933,7 +1976,7 @@ elif st.session_state.page == 6:
         st.session_state[current_question["key"]] = st.select_slider(
             "",
             options=likert_options,
-            value=st.session_state[current_question["key"]],
+            value=st.session_state[current_question["key"]] if st.session_state[current_question["key"]] in likert_options else "",
             label_visibility="collapsed",
             key=f"{current_question['key']}_slider"
         )
@@ -1953,6 +1996,15 @@ elif st.session_state.page == 6:
     with col_next:
         next_label = "Finish →" if idx == len(page6_questions) - 1 else "Next →"
         if st.button(next_label, key="page6_next"):
+            if current_question["type"] == "occupation_fit":
+                if not st.session_state.get("occupation_fit_radio"):
+                    st.error("Please select the description that best fits your occupation")
+                    st.stop()
+            else:
+                if not st.session_state.get(current_question["key"]):
+                    st.error("Please select one option before continuing")
+                    st.stop()
+
             if idx < len(page6_questions) - 1:
                 st.session_state.page6_question_index = idx + 1
                 st.rerun()
@@ -2161,11 +2213,11 @@ elif st.session_state.page == 8:
         st.markdown("")
         st.markdown("**To what extent do you believe that your AI Agents fear is shared by most people?**")
 
-        fear_sharing_options_after = ["Not at all", "Rarely", "Occasionally", "Moderately", "Often", "Very often", "Almost always"]
+        fear_sharing_options_after = ["", "Not at all", "Rarely", "Occasionally", "Moderately", "Often", "Very often", "Almost always"]
         fears_shared_after = st.select_slider(
             label="Fear shared after",
             options=fear_sharing_options_after,
-            value=st.session_state.fears_shared_after if st.session_state.fears_shared_after else "Moderately",
+            value=st.session_state.fears_shared_after if st.session_state.fears_shared_after in fear_sharing_options_after else "",
             label_visibility="collapsed",
             key="fears_shared_after_input"
         )
@@ -2211,11 +2263,11 @@ elif st.session_state.page == 8:
         st.markdown("")
         st.markdown("**To what extent do you believe that your AI Agents hopes are shared by most people?**")
 
-        hope_sharing_options_after = ["Not at all", "Rarely", "Occasionally", "Moderately", "Often", "Very often", "Almost always"]
+        hope_sharing_options_after = ["", "Not at all", "Rarely", "Occasionally", "Moderately", "Often", "Very often", "Almost always"]
         hopes_shared_after = st.select_slider(
             label="Hope shared after",
             options=hope_sharing_options_after,
-            value=st.session_state.hopes_shared_after if st.session_state.hopes_shared_after else "Moderately",
+            value=st.session_state.hopes_shared_after if st.session_state.hopes_shared_after in hope_sharing_options_after else "",
             label_visibility="collapsed",
             key="hopes_shared_after_input"
         )
@@ -2253,6 +2305,10 @@ elif st.session_state.page == 8:
                 st.error("Hopes: Please enter at least 70 characters")
             elif len(hopes_text_after) > 350:
                 st.error("Hopes: Your response exceeds 350 characters")
+            elif not fears_shared_after:
+                st.error("Fears: Please select how widely your fear is shared")
+            elif not hopes_shared_after:
+                st.error("Hopes: Please select how widely your hope is shared")
             else:
                 st.session_state.fears_rating_after = fears_rating_after
                 st.session_state.hopes_rating_after = hopes_rating_after
