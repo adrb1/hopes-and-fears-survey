@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 import streamlit as st
 import streamlit.components.v1 as components
+from urllib.parse import quote_plus
 from sqlalchemy import create_engine, Column, Integer, BigInteger, SmallInteger, String, Text, Boolean, DateTime, ForeignKey, Enum, text, inspect
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
@@ -120,32 +121,96 @@ components.html(
 
 # Database config
 # Priority order:
-# 1. Streamlit secrets: DB_URL or [database].url
-# 2. Environment variables: DB_URL or HOPES_FEARS_DB_URL
-# 3. Local fallback: SQLite database for development/demo use
-def get_database_url():
+# 1. SSH tunnel secrets (ssh_* + db_*)
+# 2. Streamlit secrets/environment DB URL
+# 3. Local fallback SQLite for development/demo use
+def _secret_or_env(secret_key, env_key=None, default=None):
     try:
-        if "DB_URL" in st.secrets:
-            return st.secrets["DB_URL"]
-        if "database" in st.secrets and "url" in st.secrets["database"]:
-            return st.secrets["database"]["url"]
+        if secret_key in st.secrets:
+            return st.secrets[secret_key]
     except Exception:
         pass
+    return os.getenv(env_key or secret_key.upper(), default)
 
-    return (
-        os.getenv("DB_URL")
-        or os.getenv("HOPES_FEARS_DB_URL")
-        or "sqlite:///./survey.db"
+
+def _build_db_url_from_ssh_secrets():
+    ssh_host = _secret_or_env("ssh_host")
+    ssh_port = int(_secret_or_env("ssh_port", default=22))
+    ssh_user = _secret_or_env("ssh_user")
+    ssh_password = _secret_or_env("ssh_password")
+
+    db_host = _secret_or_env("db_host", default="127.0.0.1")
+    db_port = int(_secret_or_env("db_port", default=3306))
+    db_user = _secret_or_env("db_user")
+    db_password = _secret_or_env("db_password", default="")
+    db_name = _secret_or_env("db_name")
+
+    required = [ssh_host, ssh_user, ssh_password, db_user, db_name]
+    if not all(required):
+        return None, None
+
+    from sshtunnel import SSHTunnelForwarder
+
+    tunnel = SSHTunnelForwarder(
+        (ssh_host, ssh_port),
+        ssh_username=ssh_user,
+        ssh_password=ssh_password,
+        remote_bind_address=(db_host, db_port),
+        local_bind_address=("127.0.0.1", 0),
     )
+    tunnel.start()
+
+    encoded_password = quote_plus(str(db_password))
+    db_url = (
+        f"mysql+mysqlconnector://{db_user}:{encoded_password}"
+        f"@127.0.0.1:{tunnel.local_bind_port}/{db_name}"
+    )
+    return db_url, tunnel
 
 
-DB_URL = get_database_url()
+@st.cache_resource(show_spinner=False)
+def init_db_connection():
+    db_mode = "sqlite"
+    db_url = "sqlite:///./survey.db"
+    tunnel = None
+    db_config_error = None
+
+    try:
+        ssh_db_url, ssh_tunnel = _build_db_url_from_ssh_secrets()
+        if ssh_db_url:
+            db_url = ssh_db_url
+            tunnel = ssh_tunnel
+            db_mode = "ssh_tunnel"
+        else:
+            secrets_db_url = None
+            try:
+                if "DB_URL" in st.secrets:
+                    secrets_db_url = st.secrets["DB_URL"]
+                elif "database" in st.secrets and "url" in st.secrets["database"]:
+                    secrets_db_url = st.secrets["database"]["url"]
+            except Exception:
+                pass
+
+            env_db_url = os.getenv("DB_URL") or os.getenv("HOPES_FEARS_DB_URL")
+            if secrets_db_url or env_db_url:
+                db_url = secrets_db_url or env_db_url
+                db_mode = "db_url"
+    except Exception as exc:
+        db_config_error = str(exc).splitlines()[0]
+        db_mode = "sqlite_fallback"
+        db_url = "sqlite:///./survey.db"
+
+    is_sqlite = db_url.startswith("sqlite")
+    engine = create_engine(
+        db_url,
+        pool_pre_ping=not is_sqlite,
+        connect_args={"check_same_thread": False} if is_sqlite else {},
+    )
+    return engine, db_url, db_mode, db_config_error, tunnel
+
+
+engine, DB_URL, DB_MODE, DB_CONFIG_ERROR, DB_TUNNEL = init_db_connection()
 IS_SQLITE = DB_URL.startswith("sqlite")
-engine = create_engine(
-    DB_URL,
-    pool_pre_ping=not IS_SQLITE,
-    connect_args={"check_same_thread": False} if IS_SQLITE else {},
-)
 DB_INIT_ERROR = None
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -621,6 +686,10 @@ def get_runtime_db_status():
         "database": "unknown",
         "error": "",
     }
+    if DB_CONFIG_ERROR:
+        status["error"] = DB_CONFIG_ERROR
+        return status
+
     if DB_INIT_ERROR is not None:
         status["error"] = DB_INIT_ERROR
         return status
