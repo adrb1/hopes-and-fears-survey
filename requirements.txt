@@ -2,3 +2,4 @@ streamlit
 sqlalchemy
 mysql-connector-python
 sshtunnel
+paramiko

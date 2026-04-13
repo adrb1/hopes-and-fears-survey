@@ -1,4 +1,5 @@
 import os
+import threading
 from datetime import datetime
 import streamlit as st
 import streamlit.components.v1 as components
@@ -157,8 +158,26 @@ def _build_db_url_from_ssh_secrets():
         ssh_password=ssh_password,
         remote_bind_address=(db_host, db_port),
         local_bind_address=("127.0.0.1", 0),
+        allow_agent=False,
+        host_pkey_directories=[],
     )
-    tunnel.start()
+
+    # Start tunnel with a timeout so the app never hangs indefinitely
+    _error: list = [None]
+
+    def _start():
+        try:
+            tunnel.start()
+        except Exception as exc:
+            _error[0] = exc
+
+    _t = threading.Thread(target=_start, daemon=True)
+    _t.start()
+    _t.join(timeout=20)
+    if _t.is_alive():
+        raise TimeoutError("SSH tunnel did not connect within 20 seconds")
+    if _error[0] is not None:
+        raise _error[0]
 
     encoded_password = quote_plus(str(db_password))
     db_url = (
