@@ -1,5 +1,6 @@
 import os
 import threading
+import time
 from datetime import datetime
 import streamlit as st
 import streamlit.components.v1 as components
@@ -157,9 +158,7 @@ def _build_db_url_from_ssh_secrets():
         ssh_username=ssh_user,
         ssh_password=ssh_password,
         remote_bind_address=(db_host, db_port),
-        local_bind_address=("127.0.0.1", 0),
-        allow_agent=False,
-        host_pkey_directories=[],
+        set_keepalive=30,
     )
 
     # Start tunnel with a timeout so the app never hangs indefinitely
@@ -179,12 +178,25 @@ def _build_db_url_from_ssh_secrets():
     if _error[0] is not None:
         raise _error[0]
 
-    encoded_password = quote_plus(str(db_password))
-    db_url = (
-        f"mysql+mysqlconnector://{db_user}:{encoded_password}"
-        f"@127.0.0.1:{tunnel.local_bind_port}/{db_name}"
+    import pymysql
+
+    def _make_conn():
+        return pymysql.connect(
+            host="127.0.0.1",
+            port=tunnel.local_bind_port,
+            user=db_user,
+            password=str(db_password),
+            database=db_name,
+            connect_timeout=30,
+        )
+
+    engine = create_engine(
+        "mysql+pymysql://",
+        creator=_make_conn,
+        pool_pre_ping=True,
+        pool_recycle=600,
     )
-    return db_url, tunnel
+    return engine, tunnel
 
 
 @st.cache_resource(show_spinner=False)
@@ -193,12 +205,13 @@ def init_db_connection():
     db_url = "sqlite:///./survey.db"
     tunnel = None
     db_config_error = None
+    ssh_engine = None
 
     try:
-        ssh_db_url, ssh_tunnel = _build_db_url_from_ssh_secrets()
-        if ssh_db_url:
-            db_url = ssh_db_url
+        ssh_engine, ssh_tunnel = _build_db_url_from_ssh_secrets()
+        if ssh_engine is not None:
             tunnel = ssh_tunnel
+            db_url = "mysql+pymysql://"
             db_mode = "ssh_tunnel"
         else:
             secrets_db_url = None
@@ -219,12 +232,15 @@ def init_db_connection():
         db_mode = "sqlite_fallback"
         db_url = "sqlite:///./survey.db"
 
-    is_sqlite = db_url.startswith("sqlite")
-    engine = create_engine(
-        db_url,
-        pool_pre_ping=not is_sqlite,
-        connect_args={"check_same_thread": False} if is_sqlite else {},
-    )
+    if ssh_engine is not None:
+        engine = ssh_engine
+    else:
+        is_sqlite = db_url.startswith("sqlite")
+        engine = create_engine(
+            db_url,
+            pool_pre_ping=not is_sqlite,
+            connect_args={"check_same_thread": False} if is_sqlite else {},
+        )
     return engine, db_url, db_mode, db_config_error, tunnel
 
 
