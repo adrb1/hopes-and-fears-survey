@@ -744,6 +744,127 @@ def get_runtime_db_display_text(status):
         return f"CONNECTED ({status['database']})"
     return "DISCONNECTED"
 
+
+def queue_task_event(task_id, event_type):
+    if "pending_task_events" not in st.session_state:
+        st.session_state.pending_task_events = []
+    st.session_state.pending_task_events.append(
+        {
+            "task_id": task_id,
+            "event_type": event_type,
+        }
+    )
+
+
+def finalize_submission_to_db():
+    prolific_id = (st.session_state.get("prolific_id") or "").strip()
+    job_role = st.session_state.get("job_role") or ""
+    if not prolific_id or not job_role:
+        raise ValueError("Missing required participant identity fields")
+
+    final_gender = (
+        st.session_state.get("gender_other", "").strip()
+        if st.session_state.get("gender_identity") == "Other"
+        else st.session_state.get("gender_identity")
+    )
+    final_ethnicity = (
+        st.session_state.get("ethnicity_other", "").strip()
+        if st.session_state.get("ethnicity") == "Other"
+        else st.session_state.get("ethnicity")
+    )
+    final_education = (
+        st.session_state.get("education_other", "").strip()
+        if st.session_state.get("education_level") == "Other"
+        else st.session_state.get("education_level")
+    )
+
+    occ_options = [
+        "My occupation requires minimal prior experience or training, potentially needs a high school diploma or GED, and typically involves a brief training period of a few days to a few months.",
+        "My occupation requires a high school diploma, several months to a year of training, and often involve assisting others.",
+        "My occupation requires vocational training, a college degree, or specialized certifications, and typically involves complex problem-solving, creativity, or advanced technical skills.",
+    ]
+    occupation_fit_choice = st.session_state.get("occupation_fit_radio", occ_options[0])
+    if occupation_fit_choice not in occ_options:
+        occupation_fit_choice = occ_options[0]
+
+    likert_scale_options = [
+        "Strongly Disagree",
+        "Disagree",
+        "Somewhat Disagree",
+        "Neutral",
+        "Somewhat Agree",
+        "Agree",
+        "Strongly Agree",
+    ]
+    likert_values = {opt: i for i, opt in enumerate(likert_scale_options)}
+
+    db = SessionLocal()
+    try:
+        participant_id = get_or_create_participant(db, prolific_id, job_role)
+        st.session_state.participant_id = participant_id
+
+        save_profile(
+            db,
+            participant_id,
+            age_group=st.session_state.get("age_group"),
+            gender_identity=final_gender,
+            ethnicity=final_ethnicity,
+            favourite_colour=st.session_state.get("favourite_colour"),
+            education_level=final_education,
+            occupation_description=occupation_fit_choice,
+        )
+
+        save_attitude(
+            db,
+            participant_id,
+            st.session_state.get("ai_description"),
+            st.session_state.get("fears_rating"),
+            st.session_state.get("fears_text"),
+            st.session_state.get("fears_shared"),
+            st.session_state.get("hopes_rating"),
+            st.session_state.get("hopes_text"),
+            st.session_state.get("hopes_shared"),
+        )
+
+        save_ai_behavior(
+            db,
+            participant_id,
+            occupation_fit=occ_options.index(occupation_fit_choice),
+            smart_devices_recognition=likert_values[st.session_state.get("smart_devices")],
+            ai_help_uncertainty=likert_values[st.session_state.get("ai_help")],
+            ai_technology_identification=likert_values[st.session_state.get("ai_tech_id")],
+            ai_skillful_use=likert_values[st.session_state.get("ai_skillful")],
+            ai_learning_difficulty=likert_values[st.session_state.get("ai_learning")],
+            ai_work_efficiency=likert_values[st.session_state.get("ai_efficiency")],
+            ai_capabilities_evaluation=likert_values[st.session_state.get("ai_eval")],
+            ai_solution_choice=likert_values[st.session_state.get("ai_solution")],
+            attention_check=likert_values[st.session_state.get("attention_check")],
+            ai_application_choice=likert_values[st.session_state.get("ai_choice")],
+            ethical_compliance=likert_values[st.session_state.get("ethical")],
+            privacy_alertness=likert_values[st.session_state.get("privacy")],
+            ai_abuse_alertness=likert_values[st.session_state.get("ai_abuse")],
+        )
+
+        for pair_id, choice in st.session_state.get("pair_choices", {}).items():
+            if pair_id > 0:
+                save_task_pair_choice(db, participant_id, pair_id, choice)
+
+        for event in st.session_state.get("pending_task_events", []):
+            record_task_event(db, participant_id, event["task_id"], event["event_type"])
+
+        save_attitude_after(
+            db,
+            participant_id,
+            st.session_state.get("fears_rating_after"),
+            st.session_state.get("fears_text_after"),
+            st.session_state.get("fears_shared_after"),
+            st.session_state.get("hopes_rating_after"),
+            st.session_state.get("hopes_text_after"),
+            st.session_state.get("hopes_shared_after"),
+        )
+    finally:
+        db.close()
+
 # Initialization for session data
 if "page" not in st.session_state:
     st.session_state.page = 0
@@ -822,6 +943,12 @@ if "detail_open_token" not in st.session_state:
     st.session_state.detail_open_token = 0
 if "last_detail_scroll_token" not in st.session_state:
     st.session_state.last_detail_scroll_token = -1
+if "pending_task_events" not in st.session_state:
+    st.session_state.pending_task_events = []
+if "final_submit_done" not in st.session_state:
+    st.session_state.final_submit_done = False
+if "final_submit_error" not in st.session_state:
+    st.session_state.final_submit_error = ""
 
 # Keep viewport position consistent when switching between survey views/sub-views.
 _view_anchor = (
@@ -1257,11 +1384,7 @@ elif st.session_state.page == 1:
             else:
                 st.session_state.prolific_id = prolific_id
                 st.session_state.job_role = job_role
-
-                db = SessionLocal()
-                participant_id = get_or_create_participant(db, prolific_id, job_role)
-                db.close()
-                st.session_state.participant_id = participant_id
+                st.session_state.participant_id = None
 
                 st.session_state.page = 2
                 st.rerun()
@@ -1310,11 +1433,6 @@ elif st.session_state.page == 2:
                 st.error("Your response exceeds 350 characters")
             else:
                 st.session_state.ai_description = ai_description
-
-                if st.session_state.participant_id is not None:
-                    db = SessionLocal()
-                    save_profile(db, st.session_state.participant_id)
-                    db.close()
 
                 st.session_state.page = 3
                 st.rerun()
@@ -1472,21 +1590,6 @@ elif st.session_state.page == 3:
                 st.session_state.fears_shared = fears_shared
                 st.session_state.hopes_shared = hopes_shared
 
-                if st.session_state.participant_id is not None:
-                    db = SessionLocal()
-                    save_attitude(
-                        db,
-                        st.session_state.participant_id,
-                        st.session_state.ai_description,
-                        fears_rating,
-                        fears_text,
-                        fears_shared,
-                        hopes_rating,
-                        hopes_text,
-                        hopes_shared,
-                    )
-                    db.close()
-
                 st.session_state.page = 4
                 st.rerun()
 
@@ -1564,12 +1667,7 @@ elif st.session_state.page == 4:
                 col_close1, col_close2 = st.columns([0.9, 0.1])
                 with col_close2:
                     if st.button("✕", key="close_modal"):
-                        if st.session_state.participant_id is not None:
-                            db = SessionLocal()
-                            try:
-                                record_task_event(db, st.session_state.participant_id, task["id"], "close")
-                            finally:
-                                db.close()
+                        queue_task_event(task["id"], "close")
                         st.session_state.selected_task = None
                         st.rerun()
                 
@@ -1618,12 +1716,7 @@ elif st.session_state.page == 4:
                 
                 st.markdown("")
                 if st.button("More →", key=f"task_more_{task['id']}"):
-                    if st.session_state.participant_id is not None:
-                        db = SessionLocal()
-                        try:
-                            record_task_event(db, st.session_state.participant_id, task["id"], "open_more")
-                        finally:
-                            db.close()
+                    queue_task_event(task["id"], "open_more")
                     st.session_state.selected_task = None
                     st.rerun()
     else:
@@ -1740,12 +1833,7 @@ elif st.session_state.page == 4:
         if st.button(label="📖 View Details", key=f"task_{task['id']}", use_container_width=True):
             st.session_state.selected_task = task['id']
             st.session_state.detail_open_token += 1
-            if st.session_state.participant_id is not None:
-                db = SessionLocal()
-                try:
-                    record_task_event(db, st.session_state.participant_id, task['id'], "view")
-                finally:
-                    db.close()
+            queue_task_event(task['id'], "view")
             st.rerun()
 
     cols5 = st.columns(n_cols, gap="small")
@@ -1882,22 +1970,6 @@ elif st.session_state.page == 5:
                 st.error("Please specify your education level")
             else:
                 # Prepare final values
-                final_gender = st.session_state.gender_other if st.session_state.gender_identity == "Other" else st.session_state.gender_identity
-                final_ethnicity = st.session_state.ethnicity_other if st.session_state.ethnicity == "Other" else st.session_state.ethnicity
-                final_education = st.session_state.education_other if st.session_state.education_level == "Other" else st.session_state.education_level
-
-                if st.session_state.participant_id is not None:
-                    db = SessionLocal()
-                    save_profile(
-                        db,
-                        st.session_state.participant_id,
-                        age_group=st.session_state.age_group,
-                        gender_identity=final_gender,
-                        ethnicity=final_ethnicity,
-                        favourite_colour=st.session_state.favourite_colour,
-                        education_level=final_education,
-                    )
-                    db.close()
                 st.session_state.page6_question_index = 0
                 st.session_state.page = 6
                 st.rerun()
@@ -2025,32 +2097,6 @@ elif st.session_state.page == 6:
                 occupation_fit_choice = st.session_state.get("occupation_fit_radio", _occ_options[0])
                 if occupation_fit_choice not in _occ_options:
                     occupation_fit_choice = _occ_options[0]
-
-                db = SessionLocal()
-                save_profile(
-                    db,
-                    st.session_state.participant_id,
-                    occupation_description=occupation_fit_choice,
-                )
-                save_ai_behavior(
-                    db,
-                    st.session_state.participant_id,
-                    occupation_fit=_occ_options.index(occupation_fit_choice),
-                    smart_devices_recognition=likert_values[st.session_state["smart_devices"]],
-                    ai_help_uncertainty=likert_values[st.session_state["ai_help"]],
-                    ai_technology_identification=likert_values[st.session_state["ai_tech_id"]],
-                    ai_skillful_use=likert_values[st.session_state["ai_skillful"]],
-                    ai_learning_difficulty=likert_values[st.session_state["ai_learning"]],
-                    ai_work_efficiency=likert_values[st.session_state["ai_efficiency"]],
-                    ai_capabilities_evaluation=likert_values[st.session_state["ai_eval"]],
-                    ai_solution_choice=likert_values[st.session_state["ai_solution"]],
-                    attention_check=attention_value,
-                    ai_application_choice=likert_values[st.session_state["ai_choice"]],
-                    ethical_compliance=likert_values[st.session_state["ethical"]],
-                    privacy_alertness=likert_values[st.session_state["privacy"]],
-                    ai_abuse_alertness=likert_values[st.session_state["ai_abuse"]],
-                )
-                db.close()
                 st.session_state.page = 7
                 st.session_state.pair_index = 0
                 st.rerun()
@@ -2085,13 +2131,7 @@ elif st.session_state.page == 7:
     total_pairs = len(task_pairs)
 
     if st.session_state.pair_index >= total_pairs:
-        # All pairs done → save and move to completion
-        if st.session_state.participant_id is not None:
-            db = SessionLocal()
-            for pair_id, choice in st.session_state.pair_choices.items():
-                if pair_id > 0:  # only save real DB pair_ids
-                    save_task_pair_choice(db, st.session_state.participant_id, pair_id, choice)
-            db.close()
+        # All pairs done -> move to completion page and persist at final submit.
         st.session_state.page = 8
         st.rerun()
     else:
@@ -2320,26 +2360,24 @@ elif st.session_state.page == 8:
                 st.session_state.fears_shared_after = fears_shared_after
                 st.session_state.hopes_shared_after = hopes_shared_after
 
-                if st.session_state.participant_id is not None:
-                    db = SessionLocal()
-                    save_attitude_after(
-                        db,
-                        st.session_state.participant_id,
-                        fears_rating_after,
-                        fears_text_after,
-                        fears_shared_after,
-                        hopes_rating_after,
-                        hopes_text_after,
-                        hopes_shared_after,
-                    )
-                    db.close()
-
-                st.session_state.page = 9
-                st.rerun()
+                try:
+                    finalize_submission_to_db()
+                    st.session_state.final_submit_done = True
+                    st.session_state.final_submit_error = ""
+                    st.session_state.page = 9
+                    st.rerun()
+                except Exception as exc:
+                    st.session_state.final_submit_done = False
+                    st.session_state.final_submit_error = str(exc).splitlines()[0]
+                    st.error(f"Final submission failed: {st.session_state.final_submit_error}")
 
 # PAGE 9: Completion message
 elif st.session_state.page == 9:
     st.markdown(f"<div id='{_view_anchor_id}' data-hf-view-anchor='true' style='height:1px; margin:0; padding:0;'></div>", unsafe_allow_html=True)
+    if st.session_state.final_submit_error:
+        st.error(f"Submission status: failed ({st.session_state.final_submit_error})")
+    elif st.session_state.final_submit_done:
+        st.success("Submission status: successfully stored in database.")
     st.markdown("""
     <div style='text-align: center; margin-top: 100px;'>
         <h2 style='font-weight: bold;'>Thank you!</h2>
