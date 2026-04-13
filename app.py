@@ -170,9 +170,9 @@ def _build_db_url_from_ssh_secrets():
 
     _t = threading.Thread(target=_start, daemon=True)
     _t.start()
-    _t.join(timeout=20)
+    _t.join(timeout=6)
     if _t.is_alive():
-        raise TimeoutError("SSH tunnel did not connect within 20 seconds")
+        raise TimeoutError("SSH tunnel did not connect within 6 seconds")
     if _error[0] is not None:
         raise _error[0]
 
@@ -608,6 +608,7 @@ def save_task_pair_choice(db, participant_id, pair_id, choice_made):
     db.commit()
 
 @st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=30)
 def load_task_pairs():
     db = SessionLocal()
     try:
@@ -637,6 +638,7 @@ def load_task_pairs():
         db.close()
 
 @st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=30)
 def load_tasks(occupation_name=None):
     db = SessionLocal()
     try:
@@ -880,7 +882,7 @@ default_job_roles = [
     "Graphic Designer",
     "Project Manager"
 ]
-_db_job_roles = load_job_roles()
+_db_job_roles = load_job_roles() if st.session_state.page >= 1 else []
 job_roles = _db_job_roles if _db_job_roles else default_job_roles
 
 # AI Agent Definition
@@ -1031,28 +1033,29 @@ tasks_gallery = [
 ]
 
 # Replace with DB tasks if available
-_db_tasks = load_tasks(st.session_state.get("job_role"))
+_db_tasks = load_tasks(st.session_state.get("job_role")) if st.session_state.page >= 4 else []
 if _db_tasks:
     tasks_gallery = _db_tasks
 
-_db_pairs_preview = load_task_pairs()
-_runtime_db = get_runtime_db_status()
+_db_pairs_preview = load_task_pairs() if st.session_state.page >= 7 else []
+_runtime_db = get_runtime_db_status() if st.session_state.page >= 1 else {"connected": False, "database": "unknown", "error": ""}
 _task_gallery_source = "DB" if _db_tasks else "MOCK"
 _task_pairs_source = "DB" if _db_pairs_preview else "MOCK"
 _db_state_text = get_runtime_db_display_text(_runtime_db)
 _db_state_bg = "#ecfdf5" if _runtime_db["connected"] else "#fef2f2"
 _db_state_border = "#16a34a" if _runtime_db["connected"] else "#dc2626"
 
-st.markdown(
-    f"""
-    <div style='margin: 6px 0 14px 0; padding: 10px 12px; border-radius: 8px;
-                border: 1px solid {_db_state_border}; background: {_db_state_bg}; font-size: 13px;'>
-        <strong>Runtime Data Source</strong><br>
-        DB: {_db_state_text} | Task Gallery: {_task_gallery_source} | Task Pairs: {_task_pairs_source}
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+if st.session_state.page >= 1:
+    st.markdown(
+        f"""
+        <div style='margin: 6px 0 14px 0; padding: 10px 12px; border-radius: 8px;
+                    border: 1px solid {_db_state_border}; background: {_db_state_bg}; font-size: 13px;'>
+            <strong>Runtime Data Source</strong><br>
+            DB: {_db_state_text} | Task Gallery: {_task_gallery_source} | Task Pairs: {_task_pairs_source}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 # PAGE 0: Consent Form
 if st.session_state.page == 0:
