@@ -742,6 +742,10 @@ def ensure_session_state():
             else:
                 st.session_state[key] = value
 
+    # Clear stale values from older app versions so final submission never writes an invalid enum.
+    if st.session_state.get("age_group") not in ["", *AGE_GROUP_OPTIONS]:
+        st.session_state.age_group = ""
+
 
 def get_page_path(page_number):
     return PAGE_PATHS[page_number]
@@ -1324,6 +1328,10 @@ def finalize_submission_to_db():
     if not prolific_id or not job_role:
         raise ValueError("Missing required participant identity fields")
 
+    selected_age_group = st.session_state.get("age_group")
+    if selected_age_group not in AGE_GROUP_OPTIONS:
+        selected_age_group = None
+
     final_gender = st.session_state.get("gender_other", "").strip() if st.session_state.get("gender_identity") == "Other" else st.session_state.get("gender_identity")
     final_ethnicity = st.session_state.get("ethnicity_other", "").strip() if st.session_state.get("ethnicity") == "Other" else st.session_state.get("ethnicity")
     final_education = st.session_state.get("education_other", "").strip() if st.session_state.get("education_level") == "Other" else st.session_state.get("education_level")
@@ -1342,7 +1350,7 @@ def finalize_submission_to_db():
         save_profile(
             db,
             participant_id,
-            age_group=st.session_state.get("age_group"),
+            age_group=selected_age_group,
             gender_identity=final_gender,
             ethnicity=final_ethnicity,
             favourite_colour=st.session_state.get("favourite_colour"),

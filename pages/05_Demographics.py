@@ -1,6 +1,6 @@
 import streamlit as st
 
-from survey_app.shared import bootstrap_page, go_to_page, render_view_anchor
+from survey_app.shared import AGE_GROUP_OPTIONS, bootstrap_page, go_to_page, render_view_anchor
 
 
 anchor_id = bootstrap_page(5)
@@ -16,7 +16,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-age_options = ["", "18-24 years old", "25-34 years old", "35-44 years old", "45-54 years old", "55-64 years old", "65+ years old"]
+age_options = [""] + AGE_GROUP_OPTIONS
 gender_options = ["", "Female", "Male", "Nonbinary", "Transgender", "Other"]
 ethnicity_options = ["", "American Indian or Alaska Native", "Asian or Pacific Islander", "Black or African American", "Hispanic or Latinx", "Middle Eastern or North African", "White", "Multiethnic", "Other"]
 colour_options = ["", "Red", "Orange", "Yellow", "Green", "Blue", "Indigo", "Violet", "Black", "White"]
