@@ -49,7 +49,6 @@ DEFAULT_JOB_ROLES = [
 ]
 
 SHARED_FREQUENCY_OPTIONS = [
-    "",
     "Not at all",
     "Rarely",
     "Occasionally",

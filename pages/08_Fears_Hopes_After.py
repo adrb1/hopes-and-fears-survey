@@ -8,6 +8,17 @@ render_view_anchor(anchor_id)
 
 st.markdown(
     """
+    <style>
+        [data-testid="stSlider"] [data-testid="stThumbValue"] {
+            display: none;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """
     <div style='text-align: center; margin-bottom: 30px;'>
         <h2 style='font-weight: bold; letter-spacing: 2px;'>AFTER COMPLETING THE SURVEY</h2>
         <h2 style='font-weight: bold; letter-spacing: 2px;'>TELL US ABOUT YOUR FEARS AND HOPES</h2>
@@ -36,7 +47,7 @@ with st.form("page8_form"):
         fears_text_after = st.text_area("Fear description after", value=st.session_state.fears_text_after, height=100, placeholder="Write your fears here", label_visibility="collapsed", key="fears_after_input")
         st.markdown(f"**{len(fears_text_after)}/350 (Min. 70 characters)**")
         st.markdown("**To what extent do you believe that your AI Agents fear is shared by most people?**")
-        fears_shared_after = st.select_slider("Fear shared after", options=SHARED_FREQUENCY_OPTIONS, value=st.session_state.fears_shared_after if st.session_state.fears_shared_after in SHARED_FREQUENCY_OPTIONS else "", label_visibility="collapsed", key="fears_shared_after_input")
+        fears_shared_after = st.select_slider("Fear shared after", options=SHARED_FREQUENCY_OPTIONS, value=st.session_state.fears_shared_after if st.session_state.fears_shared_after in SHARED_FREQUENCY_OPTIONS else "Moderately", label_visibility="collapsed", key="fears_shared_after_input")
 
     with right_col:
         st.markdown("""
@@ -55,7 +66,7 @@ with st.form("page8_form"):
         hopes_text_after = st.text_area("Hope description after", value=st.session_state.hopes_text_after, height=100, placeholder="Write your hopes here", label_visibility="collapsed", key="hopes_after_input")
         st.markdown(f"**{len(hopes_text_after)}/350 (Min. 70 characters)**")
         st.markdown("**To what extent do you believe that your AI Agents hopes are shared by most people?**")
-        hopes_shared_after = st.select_slider("Hope shared after", options=SHARED_FREQUENCY_OPTIONS, value=st.session_state.hopes_shared_after if st.session_state.hopes_shared_after in SHARED_FREQUENCY_OPTIONS else "", label_visibility="collapsed", key="hopes_shared_after_input")
+        hopes_shared_after = st.select_slider("Hope shared after", options=SHARED_FREQUENCY_OPTIONS, value=st.session_state.hopes_shared_after if st.session_state.hopes_shared_after in SHARED_FREQUENCY_OPTIONS else "Moderately", label_visibility="collapsed", key="hopes_shared_after_input")
 
     st.markdown("---")
     col_prev, _, col_next = st.columns([0.2, 0.65, 0.15])

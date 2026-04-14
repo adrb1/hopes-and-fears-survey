@@ -8,6 +8,17 @@ render_view_anchor(anchor_id)
 
 st.markdown(
     """
+    <style>
+        [data-testid="stSlider"] [data-testid="stThumbValue"] {
+            display: none;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """
     <div style='text-align: center; margin-bottom: 30px;'>
         <h2 style='font-weight: bold; letter-spacing: 2px;'>TELL US ABOUT</h2>
         <h2 style='font-weight: bold; letter-spacing: 2px;'>YOUR FEARS AND HOPES</h2>
@@ -45,7 +56,7 @@ with st.form("page3_form"):
         fears_shared = st.select_slider(
             "Fear shared",
             options=SHARED_FREQUENCY_OPTIONS,
-            value=st.session_state.fears_shared if st.session_state.fears_shared in SHARED_FREQUENCY_OPTIONS else "",
+            value=st.session_state.fears_shared if st.session_state.fears_shared in SHARED_FREQUENCY_OPTIONS else "Moderately",
             label_visibility="collapsed",
             key="fears_shared_input",
         )
@@ -76,7 +87,7 @@ with st.form("page3_form"):
         hopes_shared = st.select_slider(
             "Hope shared",
             options=SHARED_FREQUENCY_OPTIONS,
-            value=st.session_state.hopes_shared if st.session_state.hopes_shared in SHARED_FREQUENCY_OPTIONS else "",
+            value=st.session_state.hopes_shared if st.session_state.hopes_shared in SHARED_FREQUENCY_OPTIONS else "Moderately",
             label_visibility="collapsed",
             key="hopes_shared_input",
         )
