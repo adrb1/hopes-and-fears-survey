@@ -320,6 +320,8 @@ SESSION_DEFAULTS = {
     "education_level": "",
     "education_other": "",
     "profile_data": {},
+    "before_attitude_data": {},
+    "after_attitude_data": {},
     "occupation_fit_radio": "",
     "occupation_fit_choice": "",
     "smart_devices": "Neutral",
@@ -1104,6 +1106,32 @@ def get_occupation_fit_submission_data():
     return final_choice
 
 
+def get_before_attitude_submission_data():
+    stored_payload = st.session_state.get("before_attitude_data") or {}
+
+    return {
+        "fears_rating": stored_payload.get("fears_rating", st.session_state.get("fears_rating")),
+        "fears_text": stored_payload.get("fears_text", st.session_state.get("fears_text")),
+        "fears_shared": stored_payload.get("fears_shared", st.session_state.get("fears_shared")),
+        "hopes_rating": stored_payload.get("hopes_rating", st.session_state.get("hopes_rating")),
+        "hopes_text": stored_payload.get("hopes_text", st.session_state.get("hopes_text")),
+        "hopes_shared": stored_payload.get("hopes_shared", st.session_state.get("hopes_shared")),
+    }
+
+
+def get_after_attitude_submission_data():
+    stored_payload = st.session_state.get("after_attitude_data") or {}
+
+    return {
+        "fears_rating_after": stored_payload.get("fears_rating_after", st.session_state.get("fears_rating_after")),
+        "fears_text_after": stored_payload.get("fears_text_after", st.session_state.get("fears_text_after")),
+        "fears_shared_after": stored_payload.get("fears_shared_after", st.session_state.get("fears_shared_after")),
+        "hopes_rating_after": stored_payload.get("hopes_rating_after", st.session_state.get("hopes_rating_after")),
+        "hopes_text_after": stored_payload.get("hopes_text_after", st.session_state.get("hopes_text_after")),
+        "hopes_shared_after": stored_payload.get("hopes_shared_after", st.session_state.get("hopes_shared_after")),
+    }
+
+
 def _sharing_index(value):
     return SHARED_FREQUENCY_OPTIONS.index(value) + 1
 
@@ -1268,22 +1296,8 @@ def validate_final_submission_data():
     if not _is_valid_text_response(ai_description):
         errors.append("Missing or invalid AI description")
 
-    before_payload = {
-        "fears_rating": st.session_state.get("fears_rating"),
-        "fears_text": st.session_state.get("fears_text"),
-        "fears_shared": st.session_state.get("fears_shared"),
-        "hopes_rating": st.session_state.get("hopes_rating"),
-        "hopes_text": st.session_state.get("hopes_text"),
-        "hopes_shared": st.session_state.get("hopes_shared"),
-    }
-    after_payload = {
-        "fears_rating_after": st.session_state.get("fears_rating_after"),
-        "fears_text_after": st.session_state.get("fears_text_after"),
-        "fears_shared_after": st.session_state.get("fears_shared_after"),
-        "hopes_rating_after": st.session_state.get("hopes_rating_after"),
-        "hopes_text_after": st.session_state.get("hopes_text_after"),
-        "hopes_shared_after": st.session_state.get("hopes_shared_after"),
-    }
+    before_payload = get_before_attitude_submission_data()
+    after_payload = get_after_attitude_submission_data()
 
     if not _is_valid_rating(before_payload["fears_rating"]):
         errors.append("Missing or invalid before fear rating")

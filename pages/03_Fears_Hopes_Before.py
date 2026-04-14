@@ -101,4 +101,12 @@ if page3_next:
     else:
         st.session_state.fears_rating = option_to_rating(fears_rating, FEAR_RATING_OPTIONS)
         st.session_state.hopes_rating = option_to_rating(hopes_rating, HOPE_RATING_OPTIONS)
+        st.session_state.before_attitude_data = {
+            "fears_rating": st.session_state.fears_rating,
+            "fears_text": fears_text,
+            "fears_shared": fears_shared,
+            "hopes_rating": st.session_state.hopes_rating,
+            "hopes_text": hopes_text,
+            "hopes_shared": hopes_shared,
+        }
         go_to_page(4)

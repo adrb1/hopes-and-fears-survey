@@ -85,6 +85,14 @@ if page8_next:
     else:
         st.session_state.fears_rating_after = option_to_rating(fears_rating_after, FEAR_RATING_OPTIONS)
         st.session_state.hopes_rating_after = option_to_rating(hopes_rating_after, HOPE_RATING_OPTIONS)
+        st.session_state.after_attitude_data = {
+            "fears_rating_after": st.session_state.fears_rating_after,
+            "fears_text_after": fears_text_after,
+            "fears_shared_after": fears_shared_after,
+            "hopes_rating_after": st.session_state.hopes_rating_after,
+            "hopes_text_after": hopes_text_after,
+            "hopes_shared_after": hopes_shared_after,
+        }
         try:
             finalize_submission_to_db()
             st.session_state.final_submit_done = True

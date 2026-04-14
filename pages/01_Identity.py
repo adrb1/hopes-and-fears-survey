@@ -65,5 +65,7 @@ if page1_next:
         st.session_state.job_role = job_role
         st.session_state.participant_id = None
         st.session_state.profile_data = {}
+        st.session_state.before_attitude_data = {}
+        st.session_state.after_attitude_data = {}
         st.session_state.occupation_fit_choice = ""
         go_to_page(2)
