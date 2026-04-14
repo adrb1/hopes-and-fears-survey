@@ -1018,26 +1018,26 @@ def get_or_create_occupation(db, occupation_name):
     if not occ:
         occ = Occupation(occupation_name=occupation_name, definition_text="", is_active=True)
         db.add(occ)
-        db.commit()
-        db.refresh(occ)
+        db.flush()
     return occ
 
 
-def get_or_create_participant(db, prolific_id, occupation_name):
+def get_or_create_participant(db, prolific_id, occupation_name, commit=True):
     participant = db.query(Participant).filter(Participant.prolific_id == prolific_id).first()
     occ = get_or_create_occupation(db, occupation_name)
     if not participant:
         participant = Participant(prolific_id=prolific_id, occupation_id=occ.occupation_id, entry_date=datetime.utcnow())
         db.add(participant)
-        db.commit()
-        db.refresh(participant)
+        db.flush()
     else:
         participant.occupation_id = occ.occupation_id
+
+    if commit:
         db.commit()
     return participant.participant_id
 
 
-def save_profile(db, participant_id, **kwargs):
+def save_profile(db, participant_id, commit=True, **kwargs):
     existing_profile_id = db.query(ParticipantProfile.profile_id).filter(
         ParticipantProfile.participant_id == participant_id
     ).scalar()
@@ -1065,7 +1065,8 @@ def save_profile(db, participant_id, **kwargs):
             synchronize_session=False,
         )
 
-    db.commit()
+    if commit:
+        db.commit()
 
 
 def get_profile_submission_data():
@@ -1103,7 +1104,7 @@ def _sharing_index(value):
     return SHARED_FREQUENCY_OPTIONS.index(value) + 1
 
 
-def save_attitude(db, participant_id, ai_description, fears_rating, fears_text, fears_shared, hopes_rating, hopes_text, hopes_shared):
+def save_attitude(db, participant_id, ai_description, fears_rating, fears_text, fears_shared, hopes_rating, hopes_text, hopes_shared, commit=True):
     existing_before = (
         db.query(ParticipantAttitudes)
         .filter(ParticipantAttitudes.participant_id == participant_id, ParticipantAttitudes.phase == "before")
@@ -1136,10 +1137,11 @@ def save_attitude(db, participant_id, ai_description, fears_rating, fears_text, 
             )
         )
 
-    db.commit()
+    if commit:
+        db.commit()
 
 
-def save_attitude_after(db, participant_id, fears_rating_after, fears_text_after, fears_shared_after, hopes_rating_after, hopes_text_after, hopes_shared_after):
+def save_attitude_after(db, participant_id, fears_rating_after, fears_text_after, fears_shared_after, hopes_rating_after, hopes_text_after, hopes_shared_after, commit=True):
     latest_before = (
         db.query(ParticipantAttitudes)
         .filter(ParticipantAttitudes.participant_id == participant_id, ParticipantAttitudes.phase == "before")
@@ -1170,10 +1172,11 @@ def save_attitude_after(db, participant_id, fears_rating_after, fears_text_after
             )
         )
 
-    db.commit()
+    if commit:
+        db.commit()
 
 
-def record_task_event(db, participant_id, task_id, event_type):
+def record_task_event(db, participant_id, task_id, event_type, commit=True):
     db.add(
         ParticipantTaskGalleryEvents(
             participant_id=participant_id,
@@ -1182,10 +1185,11 @@ def record_task_event(db, participant_id, task_id, event_type):
             event_time=datetime.utcnow(),
         )
     )
-    db.commit()
+    if commit:
+        db.commit()
 
 
-def save_ai_behavior(db, participant_id, **kwargs):
+def save_ai_behavior(db, participant_id, commit=True, **kwargs):
     behavior = db.query(ParticipantAIBehavior).filter(ParticipantAIBehavior.participant_id == participant_id).first()
     if not behavior:
         behavior = ParticipantAIBehavior(participant_id=participant_id)
@@ -1203,10 +1207,11 @@ def save_ai_behavior(db, participant_id, **kwargs):
         if mapped_values.get(field) is not None:
             setattr(behavior, field, mapped_values[field])
 
-    db.commit()
+    if commit:
+        db.commit()
 
 
-def save_task_pair_choice(db, participant_id, pair_id, choice_made):
+def save_task_pair_choice(db, participant_id, pair_id, choice_made, commit=True):
     existing = db.query(ParticipantTaskPairChoices).filter(
         ParticipantTaskPairChoices.participant_id == participant_id,
         ParticipantTaskPairChoices.pair_id == pair_id,
@@ -1223,7 +1228,109 @@ def save_task_pair_choice(db, participant_id, pair_id, choice_made):
                 created_at=datetime.utcnow(),
             )
         )
-    db.commit()
+    if commit:
+        db.commit()
+
+
+def _is_valid_rating(value):
+    return isinstance(value, int) and 1 <= value <= 5
+
+
+def _is_valid_text_response(value):
+    normalized_value = (value or "").strip()
+    return 70 <= len(normalized_value) <= 350
+
+
+def validate_final_submission_data():
+    errors = []
+
+    prolific_id = (st.session_state.get("prolific_id") or "").strip()
+    job_role = (st.session_state.get("job_role") or "").strip()
+    if not prolific_id:
+        errors.append("Missing required participant identity: prolific_id")
+    if not job_role:
+        errors.append("Missing required participant identity: job_role")
+
+    profile_data = get_profile_submission_data()
+    for field_name in ["age_group", "gender_identity", "ethnicity", "favourite_colour", "education_level"]:
+        if not profile_data.get(field_name):
+            errors.append(f"Missing required demographics field: {field_name}")
+
+    occupation_fit_choice = get_occupation_fit_submission_data()
+    if occupation_fit_choice is None:
+        errors.append("Missing required occupation description field")
+
+    ai_description = (st.session_state.get("ai_description") or "").strip()
+    if not _is_valid_text_response(ai_description):
+        errors.append("Missing or invalid AI description")
+
+    before_payload = {
+        "fears_rating": st.session_state.get("fears_rating"),
+        "fears_text": st.session_state.get("fears_text"),
+        "fears_shared": st.session_state.get("fears_shared"),
+        "hopes_rating": st.session_state.get("hopes_rating"),
+        "hopes_text": st.session_state.get("hopes_text"),
+        "hopes_shared": st.session_state.get("hopes_shared"),
+    }
+    after_payload = {
+        "fears_rating_after": st.session_state.get("fears_rating_after"),
+        "fears_text_after": st.session_state.get("fears_text_after"),
+        "fears_shared_after": st.session_state.get("fears_shared_after"),
+        "hopes_rating_after": st.session_state.get("hopes_rating_after"),
+        "hopes_text_after": st.session_state.get("hopes_text_after"),
+        "hopes_shared_after": st.session_state.get("hopes_shared_after"),
+    }
+
+    if not _is_valid_rating(before_payload["fears_rating"]):
+        errors.append("Missing or invalid before fear rating")
+    if not _is_valid_text_response(before_payload["fears_text"]):
+        errors.append("Missing or invalid before fear text")
+    if before_payload["fears_shared"] not in SHARED_FREQUENCY_OPTIONS:
+        errors.append("Missing or invalid before fear shared rating")
+    if not _is_valid_rating(before_payload["hopes_rating"]):
+        errors.append("Missing or invalid before hope rating")
+    if not _is_valid_text_response(before_payload["hopes_text"]):
+        errors.append("Missing or invalid before hope text")
+    if before_payload["hopes_shared"] not in SHARED_FREQUENCY_OPTIONS:
+        errors.append("Missing or invalid before hope shared rating")
+
+    if not _is_valid_rating(after_payload["fears_rating_after"]):
+        errors.append("Missing or invalid after fear rating")
+    if not _is_valid_text_response(after_payload["fears_text_after"]):
+        errors.append("Missing or invalid after fear text")
+    if after_payload["fears_shared_after"] not in SHARED_FREQUENCY_OPTIONS:
+        errors.append("Missing or invalid after fear shared rating")
+    if not _is_valid_rating(after_payload["hopes_rating_after"]):
+        errors.append("Missing or invalid after hope rating")
+    if not _is_valid_text_response(after_payload["hopes_text_after"]):
+        errors.append("Missing or invalid after hope text")
+    if after_payload["hopes_shared_after"] not in SHARED_FREQUENCY_OPTIONS:
+        errors.append("Missing or invalid after hope shared rating")
+
+    likert_payload = {key: st.session_state.get(key) for key in PAGE6_LIKERT_KEYS}
+    invalid_likert_keys = [key for key, value in likert_payload.items() if value not in LIKERT_SCALE_OPTIONS]
+    for key in invalid_likert_keys:
+        errors.append(f"Missing or invalid AI experience field: {key}")
+
+    expected_pair_ids = [pair["pair_id"] for pair in get_task_pairs_for_ui() if pair["pair_id"] > 0]
+    pair_choices = st.session_state.get("pair_choices", {})
+    missing_pair_ids = [pair_id for pair_id in expected_pair_ids if pair_choices.get(pair_id) not in {"left", "right", "skip"}]
+    if missing_pair_ids:
+        errors.append("Missing one or more task pair choices")
+
+    return {
+        "errors": errors,
+        "prolific_id": prolific_id,
+        "job_role": job_role,
+        "profile_data": profile_data,
+        "occupation_fit_choice": occupation_fit_choice,
+        "ai_description": ai_description,
+        "before_payload": before_payload,
+        "after_payload": after_payload,
+        "likert_payload": likert_payload,
+        "pair_choices": pair_choices,
+        "pending_task_events": st.session_state.get("pending_task_events", []),
+    }
 
 
 @st.cache_data(show_spinner=False, ttl=30)
@@ -1385,90 +1492,88 @@ def get_task_pairs_for_ui():
 
 
 def finalize_submission_to_db():
-    prolific_id = (st.session_state.get("prolific_id") or "").strip()
-    job_role = st.session_state.get("job_role") or ""
-    if not prolific_id or not job_role:
-        raise ValueError("Missing required participant identity fields")
-
-    profile_data = get_profile_submission_data()
-    if not all([
-        profile_data["age_group"],
-        profile_data["gender_identity"],
-        profile_data["ethnicity"],
-        profile_data["favourite_colour"],
-        profile_data["education_level"],
-    ]):
-        raise ValueError("Missing required demographics fields")
-
-    occupation_fit_choice = get_occupation_fit_submission_data()
-    if occupation_fit_choice is None:
-        raise ValueError("Missing required occupation description field")
+    submission_data = validate_final_submission_data()
+    if submission_data["errors"]:
+        raise ValueError(submission_data["errors"][0])
 
     likert_values = {opt: i + 1 for i, opt in enumerate(LIKERT_SCALE_OPTIONS)}
 
     db = SessionLocal()
     try:
-        participant_id = get_or_create_participant(db, prolific_id, job_role)
+        participant_id = get_or_create_participant(
+            db,
+            submission_data["prolific_id"],
+            submission_data["job_role"],
+            commit=False,
+        )
         st.session_state.participant_id = participant_id
 
         save_profile(
             db,
             participant_id,
-            age_group=profile_data["age_group"],
-            gender_identity=profile_data["gender_identity"],
-            ethnicity=profile_data["ethnicity"],
-            favourite_colour=profile_data["favourite_colour"],
-            education_level=profile_data["education_level"],
-            occupation_description=occupation_fit_choice,
+            commit=False,
+            age_group=submission_data["profile_data"]["age_group"],
+            gender_identity=submission_data["profile_data"]["gender_identity"],
+            ethnicity=submission_data["profile_data"]["ethnicity"],
+            favourite_colour=submission_data["profile_data"]["favourite_colour"],
+            education_level=submission_data["profile_data"]["education_level"],
+            occupation_description=submission_data["occupation_fit_choice"],
         )
 
         save_attitude(
             db,
             participant_id,
-            st.session_state.get("ai_description"),
-            st.session_state.get("fears_rating"),
-            st.session_state.get("fears_text"),
-            st.session_state.get("fears_shared"),
-            st.session_state.get("hopes_rating"),
-            st.session_state.get("hopes_text"),
-            st.session_state.get("hopes_shared"),
+            submission_data["ai_description"],
+            submission_data["before_payload"]["fears_rating"],
+            submission_data["before_payload"]["fears_text"],
+            submission_data["before_payload"]["fears_shared"],
+            submission_data["before_payload"]["hopes_rating"],
+            submission_data["before_payload"]["hopes_text"],
+            submission_data["before_payload"]["hopes_shared"],
+            commit=False,
         )
 
         save_ai_behavior(
             db,
             participant_id,
-            occupation_fit=OCCUPATION_FIT_OPTIONS.index(occupation_fit_choice),
-            smart_devices_recognition=likert_values[st.session_state.get("smart_devices")],
-            ai_help_uncertainty=likert_values[st.session_state.get("ai_help")],
-            ai_technology_identification=likert_values[st.session_state.get("ai_tech_id")],
-            ai_skillful_use=likert_values[st.session_state.get("ai_skillful")],
-            ai_learning_difficulty=likert_values[st.session_state.get("ai_learning")],
-            ai_work_efficiency=likert_values[st.session_state.get("ai_efficiency")],
-            ai_capabilities_evaluation=likert_values[st.session_state.get("ai_eval")],
-            ai_solution_choice=likert_values[st.session_state.get("ai_solution")],
-            attention_check=likert_values[st.session_state.get("attention_check")],
-            ai_application_choice=likert_values[st.session_state.get("ai_choice")],
-            ethical_compliance=likert_values[st.session_state.get("ethical")],
-            privacy_alertness=likert_values[st.session_state.get("privacy")],
-            ai_abuse_alertness=likert_values[st.session_state.get("ai_abuse")],
+            commit=False,
+            occupation_fit=OCCUPATION_FIT_OPTIONS.index(submission_data["occupation_fit_choice"]),
+            smart_devices_recognition=likert_values[submission_data["likert_payload"]["smart_devices"]],
+            ai_help_uncertainty=likert_values[submission_data["likert_payload"]["ai_help"]],
+            ai_technology_identification=likert_values[submission_data["likert_payload"]["ai_tech_id"]],
+            ai_skillful_use=likert_values[submission_data["likert_payload"]["ai_skillful"]],
+            ai_learning_difficulty=likert_values[submission_data["likert_payload"]["ai_learning"]],
+            ai_work_efficiency=likert_values[submission_data["likert_payload"]["ai_efficiency"]],
+            ai_capabilities_evaluation=likert_values[submission_data["likert_payload"]["ai_eval"]],
+            ai_solution_choice=likert_values[submission_data["likert_payload"]["ai_solution"]],
+            attention_check=likert_values[submission_data["likert_payload"]["attention_check"]],
+            ai_application_choice=likert_values[submission_data["likert_payload"]["ai_choice"]],
+            ethical_compliance=likert_values[submission_data["likert_payload"]["ethical"]],
+            privacy_alertness=likert_values[submission_data["likert_payload"]["privacy"]],
+            ai_abuse_alertness=likert_values[submission_data["likert_payload"]["ai_abuse"]],
         )
 
-        for pair_id, choice in st.session_state.get("pair_choices", {}).items():
+        for pair_id, choice in submission_data["pair_choices"].items():
             if pair_id > 0:
-                save_task_pair_choice(db, participant_id, pair_id, choice)
+                save_task_pair_choice(db, participant_id, pair_id, choice, commit=False)
 
-        for event in st.session_state.get("pending_task_events", []):
-            record_task_event(db, participant_id, event["task_id"], event["event_type"])
+        for event in submission_data["pending_task_events"]:
+            record_task_event(db, participant_id, event["task_id"], event["event_type"], commit=False)
 
         save_attitude_after(
             db,
             participant_id,
-            st.session_state.get("fears_rating_after"),
-            st.session_state.get("fears_text_after"),
-            st.session_state.get("fears_shared_after"),
-            st.session_state.get("hopes_rating_after"),
-            st.session_state.get("hopes_text_after"),
-            st.session_state.get("hopes_shared_after"),
+            submission_data["after_payload"]["fears_rating_after"],
+            submission_data["after_payload"]["fears_text_after"],
+            submission_data["after_payload"]["fears_shared_after"],
+            submission_data["after_payload"]["hopes_rating_after"],
+            submission_data["after_payload"]["hopes_text_after"],
+            submission_data["after_payload"]["hopes_shared_after"],
+            commit=False,
         )
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()
