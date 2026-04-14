@@ -18,8 +18,8 @@ st.markdown(
 
 st.session_state.page6_question_index = 0
 
-likert_options = [""] + LIKERT_SCALE_OPTIONS
-likert_values = {opt: i for i, opt in enumerate(LIKERT_SCALE_OPTIONS)}
+likert_options = LIKERT_SCALE_OPTIONS
+likert_values = {opt: i + 1 for i, opt in enumerate(LIKERT_SCALE_OPTIONS)}
 
 questions = [
     ("I can distinguish between smart devices and non-smart devices", "smart_devices"),
@@ -56,7 +56,7 @@ with st.form("page6_form"):
         question_values[question_key] = st.select_slider(
             question_key,
             options=likert_options,
-            value=st.session_state[question_key] if st.session_state[question_key] in likert_options else "",
+            value=st.session_state[question_key] if st.session_state[question_key] in likert_options else "Neutral",
             label_visibility="collapsed",
             key=f"{question_key}_slider",
         )
@@ -84,7 +84,7 @@ if page6_next:
     for question_key, selected_value in question_values.items():
         st.session_state[question_key] = selected_value
 
-    if likert_values[question_values["attention_check"]] >= 2:
+    if likert_values[question_values["attention_check"]] >= 3:
         st.error("⚠️ Attention check: Your response to the AI Agent squirrels question suggests you may not be answering carefully. Please review your responses.")
         st.stop()
 

@@ -69,6 +69,22 @@ LIKERT_SCALE_OPTIONS = [
     "Strongly Agree",
 ]
 
+PAGE6_LIKERT_KEYS = [
+    "smart_devices",
+    "ai_help",
+    "ai_tech_id",
+    "ai_skillful",
+    "ai_learning",
+    "ai_efficiency",
+    "ai_eval",
+    "ai_solution",
+    "attention_check",
+    "ai_choice",
+    "ethical",
+    "privacy",
+    "ai_abuse",
+]
+
 AGE_GROUP_OPTIONS = [
     "18-24 years old",
     "25-34 years old",
@@ -280,19 +296,19 @@ SESSION_DEFAULTS = {
     "education_level": "",
     "education_other": "",
     "occupation_fit_radio": "",
-    "smart_devices": "",
-    "ai_help": "",
-    "ai_tech_id": "",
-    "ai_skillful": "",
-    "ai_learning": "",
-    "ai_efficiency": "",
-    "ai_eval": "",
-    "ai_solution": "",
-    "attention_check": "",
-    "ai_choice": "",
-    "ethical": "",
-    "privacy": "",
-    "ai_abuse": "",
+    "smart_devices": "Neutral",
+    "ai_help": "Neutral",
+    "ai_tech_id": "Neutral",
+    "ai_skillful": "Neutral",
+    "ai_learning": "Neutral",
+    "ai_efficiency": "Neutral",
+    "ai_eval": "Neutral",
+    "ai_solution": "Neutral",
+    "attention_check": "Neutral",
+    "ai_choice": "Neutral",
+    "ethical": "Neutral",
+    "privacy": "Neutral",
+    "ai_abuse": "Neutral",
 }
 
 
@@ -726,6 +742,10 @@ def ensure_session_state():
                 st.session_state[key] = list(value)
             else:
                 st.session_state[key] = value
+
+    for key in PAGE6_LIKERT_KEYS:
+        if st.session_state.get(key) not in LIKERT_SCALE_OPTIONS:
+            st.session_state[key] = "Neutral"
 
     # Clear stale values from older app versions so final submission never writes an invalid enum.
     if st.session_state.get("age_group") not in ["", *AGE_GROUP_OPTIONS]:
@@ -1325,7 +1345,7 @@ def finalize_submission_to_db():
     if occupation_fit_choice not in OCCUPATION_FIT_OPTIONS:
         occupation_fit_choice = OCCUPATION_FIT_OPTIONS[0]
 
-    likert_values = {opt: i for i, opt in enumerate(LIKERT_SCALE_OPTIONS)}
+    likert_values = {opt: i + 1 for i, opt in enumerate(LIKERT_SCALE_OPTIONS)}
 
     db = SessionLocal()
     try:
