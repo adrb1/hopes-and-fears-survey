@@ -295,6 +295,7 @@ SESSION_DEFAULTS = {
     "favourite_colour_other": "",
     "education_level": "",
     "education_other": "",
+    "profile_data": {},
     "occupation_fit_radio": "",
     "smart_devices": "Neutral",
     "ai_help": "Neutral",
@@ -1042,6 +1043,26 @@ def save_profile(db, participant_id, **kwargs):
     db.commit()
 
 
+def get_profile_submission_data():
+    stored_profile = st.session_state.get("profile_data") or {}
+
+    age_group = stored_profile.get("age_group", st.session_state.get("age_group"))
+    gender_identity = stored_profile.get("gender_identity", st.session_state.get("gender_identity"))
+    ethnicity = stored_profile.get("ethnicity", st.session_state.get("ethnicity"))
+    favourite_colour = stored_profile.get("favourite_colour", st.session_state.get("favourite_colour"))
+    education_level = stored_profile.get("education_level", st.session_state.get("education_level"))
+
+    normalized_profile = {
+        "age_group": age_group if age_group in AGE_GROUP_OPTIONS else None,
+        "gender_identity": (gender_identity or "").strip(),
+        "ethnicity": (ethnicity or "").strip(),
+        "favourite_colour": (favourite_colour or "").strip(),
+        "education_level": (education_level or "").strip(),
+    }
+
+    return normalized_profile
+
+
 def _sharing_index(value):
     return SHARED_FREQUENCY_OPTIONS[1:].index(value) + 1
 
@@ -1333,13 +1354,15 @@ def finalize_submission_to_db():
     if not prolific_id or not job_role:
         raise ValueError("Missing required participant identity fields")
 
-    selected_age_group = st.session_state.get("age_group")
-    if selected_age_group not in AGE_GROUP_OPTIONS:
-        selected_age_group = None
-
-    final_gender = st.session_state.get("gender_other", "").strip() if st.session_state.get("gender_identity") == "Other" else st.session_state.get("gender_identity")
-    final_ethnicity = st.session_state.get("ethnicity_other", "").strip() if st.session_state.get("ethnicity") == "Other" else st.session_state.get("ethnicity")
-    final_education = st.session_state.get("education_other", "").strip() if st.session_state.get("education_level") == "Other" else st.session_state.get("education_level")
+    profile_data = get_profile_submission_data()
+    if not all([
+        profile_data["age_group"],
+        profile_data["gender_identity"],
+        profile_data["ethnicity"],
+        profile_data["favourite_colour"],
+        profile_data["education_level"],
+    ]):
+        raise ValueError("Missing required demographics fields")
 
     occupation_fit_choice = st.session_state.get("occupation_fit_radio", OCCUPATION_FIT_OPTIONS[0])
     if occupation_fit_choice not in OCCUPATION_FIT_OPTIONS:
@@ -1355,11 +1378,11 @@ def finalize_submission_to_db():
         save_profile(
             db,
             participant_id,
-            age_group=selected_age_group,
-            gender_identity=final_gender,
-            ethnicity=final_ethnicity,
-            favourite_colour=st.session_state.get("favourite_colour"),
-            education_level=final_education,
+            age_group=profile_data["age_group"],
+            gender_identity=profile_data["gender_identity"],
+            ethnicity=profile_data["ethnicity"],
+            favourite_colour=profile_data["favourite_colour"],
+            education_level=profile_data["education_level"],
             occupation_description=occupation_fit_choice,
         )
 

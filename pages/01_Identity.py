@@ -64,4 +64,5 @@ if page1_next:
         st.session_state.prolific_id = prolific_id
         st.session_state.job_role = job_role
         st.session_state.participant_id = None
+        st.session_state.profile_data = {}
         go_to_page(2)
