@@ -291,8 +291,8 @@ SESSION_DEFAULTS = {
     "hopes_rating": 3,
     "fears_text": "",
     "hopes_text": "",
-    "fears_shared": None,
-    "hopes_shared": None,
+    "fears_shared": "Moderately",
+    "hopes_shared": "Moderately",
     "selected_task": None,
     "page6_question_index": 0,
     "pair_index": 0,
@@ -301,8 +301,8 @@ SESSION_DEFAULTS = {
     "hopes_rating_after": 3,
     "fears_text_after": "",
     "hopes_text_after": "",
-    "fears_shared_after": None,
-    "hopes_shared_after": None,
+    "fears_shared_after": "Moderately",
+    "hopes_shared_after": "Moderately",
     "last_scrolled_task_id": None,
     "detail_open_token": 0,
     "last_detail_scroll_token": -1,
@@ -772,6 +772,10 @@ def ensure_session_state():
     for key in PAGE6_LIKERT_KEYS:
         if st.session_state.get(key) not in LIKERT_SCALE_OPTIONS:
             st.session_state[key] = "Neutral"
+
+    for key in ["fears_shared", "hopes_shared", "fears_shared_after", "hopes_shared_after"]:
+        if st.session_state.get(key) not in SHARED_FREQUENCY_OPTIONS:
+            st.session_state[key] = "Moderately"
 
     # Clear stale values from older app versions so final submission never writes an invalid enum.
     if st.session_state.get("age_group") not in ["", *AGE_GROUP_OPTIONS]:
