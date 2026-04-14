@@ -66,4 +66,12 @@ if page5_next:
     elif education_selected == "Other" and not education_other.strip():
         st.error("Please specify your education level")
     else:
+        st.session_state.age_group = age_group
+        st.session_state.gender_identity = gender_selected
+        st.session_state.gender_other = gender_other
+        st.session_state.ethnicity = ethnicity_selected
+        st.session_state.ethnicity_other = ethnicity_other
+        st.session_state.favourite_colour = favourite_colour
+        st.session_state.education_level = education_selected
+        st.session_state.education_other = education_other
         go_to_page(6)
