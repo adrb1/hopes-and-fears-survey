@@ -1,0 +1,99 @@
+import streamlit as st
+
+from survey_app.shared import SHARED_FREQUENCY_OPTIONS, bootstrap_page, finalize_submission_to_db, get_task_pairs_for_ui, go_to_page, render_view_anchor
+
+
+anchor_id = bootstrap_page(8)
+render_view_anchor(anchor_id)
+
+st.markdown(
+    """
+    <div style='text-align: center; margin-bottom: 30px;'>
+        <h2 style='font-weight: bold; letter-spacing: 2px;'>AFTER COMPLETING THE SURVEY</h2>
+        <h2 style='font-weight: bold; letter-spacing: 2px;'>TELL US ABOUT YOUR FEARS AND HOPES</h2>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+with st.form("page8_form"):
+    left_col, right_col = st.columns(2, gap="large")
+
+    with left_col:
+        st.markdown("""
+        <div style='background-color: #1a1a1a; color: white; padding: 30px; border-radius: 8px;'>
+        <h3 style='text-align: center; margin-bottom: 20px;'>I rate my fears about AI Agents as</h3>
+        </div>
+        """, unsafe_allow_html=True)
+        fears_rating_after = st.slider("Fear Level After", 1, 5, value=min(max(st.session_state.fears_rating_after, 1), 5), label_visibility="collapsed", key="fears_after_slider")
+        st.markdown("""
+        <div style='display: flex; justify-content: space-between; margin-top: -25px;'>
+            <span style='font-size: 12px; color: #666;'>No fear at all</span>
+            <span style='font-size: 12px; color: #666;'>Terrified</span>
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown("**I fear AI Agents because...**")
+        fears_text_after = st.text_area("Fear description after", value=st.session_state.fears_text_after, height=100, placeholder="Write your fears here", label_visibility="collapsed", key="fears_after_input")
+        st.markdown(f"**{len(fears_text_after)}/350 (Min. 70 characters)**")
+        st.markdown("**To what extent do you believe that your AI Agents fear is shared by most people?**")
+        fears_shared_after = st.select_slider("Fear shared after", options=SHARED_FREQUENCY_OPTIONS, value=st.session_state.fears_shared_after if st.session_state.fears_shared_after in SHARED_FREQUENCY_OPTIONS else "", label_visibility="collapsed", key="fears_shared_after_input")
+
+    with right_col:
+        st.markdown("""
+        <div style='border: 2px solid #333; padding: 30px; border-radius: 8px; background-color: white;'>
+        <h3 style='text-align: center; margin-bottom: 20px; color: black;'>I rate my hopes about AI Agents as</h3>
+        </div>
+        """, unsafe_allow_html=True)
+        hopes_rating_after = st.slider("Hope Level After", 1, 5, value=min(max(st.session_state.hopes_rating_after, 1), 5), label_visibility="collapsed", key="hopes_after_slider")
+        st.markdown("""
+        <div style='display: flex; justify-content: space-between; margin-top: -25px;'>
+            <span style='font-size: 12px; color: #666;'>No hope at all</span>
+            <span style='font-size: 12px; color: #666;'>Full of hope</span>
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown("**I have hope in AI Agents because...**")
+        hopes_text_after = st.text_area("Hope description after", value=st.session_state.hopes_text_after, height=100, placeholder="Write your hopes here", label_visibility="collapsed", key="hopes_after_input")
+        st.markdown(f"**{len(hopes_text_after)}/350 (Min. 70 characters)**")
+        st.markdown("**To what extent do you believe that your AI Agents hopes are shared by most people?**")
+        hopes_shared_after = st.select_slider("Hope shared after", options=SHARED_FREQUENCY_OPTIONS, value=st.session_state.hopes_shared_after if st.session_state.hopes_shared_after in SHARED_FREQUENCY_OPTIONS else "", label_visibility="collapsed", key="hopes_shared_after_input")
+
+    st.markdown("---")
+    col_prev, _, col_next = st.columns([0.2, 0.65, 0.15])
+    with col_prev:
+        page8_prev = st.form_submit_button("← Previous")
+    with col_next:
+        page8_next = st.form_submit_button("Next →")
+
+if page8_prev:
+    st.session_state.pair_index = max(len(get_task_pairs_for_ui()) - 1, 0)
+    go_to_page(7)
+
+if page8_next:
+    if len(fears_text_after.strip()) < 70:
+        st.error("Fears: Please enter at least 70 characters")
+    elif len(fears_text_after) > 350:
+        st.error("Fears: Your response exceeds 350 characters")
+    elif len(hopes_text_after.strip()) < 70:
+        st.error("Hopes: Please enter at least 70 characters")
+    elif len(hopes_text_after) > 350:
+        st.error("Hopes: Your response exceeds 350 characters")
+    elif not fears_shared_after:
+        st.error("Fears: Please select how widely your fear is shared")
+    elif not hopes_shared_after:
+        st.error("Hopes: Please select how widely your hope is shared")
+    else:
+        st.session_state.fears_rating_after = fears_rating_after
+        st.session_state.hopes_rating_after = hopes_rating_after
+        st.session_state.fears_text_after = fears_text_after
+        st.session_state.hopes_text_after = hopes_text_after
+        st.session_state.fears_shared_after = fears_shared_after
+        st.session_state.hopes_shared_after = hopes_shared_after
+        try:
+            finalize_submission_to_db()
+            st.session_state.final_submit_done = True
+            st.session_state.final_submit_error = ""
+            go_to_page(9)
+        except Exception as exc:
+            st.session_state.final_submit_done = False
+            st.session_state.final_submit_error = str(exc).splitlines()[0]
+            st.error(f"Final submission failed: {st.session_state.final_submit_error}")
