@@ -39,11 +39,11 @@ questions = [
 
 with st.form("page6_form"):
     st.markdown("**Which description best fits your occupation?**")
-    occupation_fit_value = st.selectbox(
+    current_occupation_fit = st.session_state.get("occupation_fit_radio", "")
+    occupation_fit_value = st.radio(
         "My occupation requires...",
-        [""] + OCCUPATION_FIT_OPTIONS,
-        index=([""] + OCCUPATION_FIT_OPTIONS).index(st.session_state.get("occupation_fit_radio", "")) if st.session_state.get("occupation_fit_radio", "") in [""] + OCCUPATION_FIT_OPTIONS else 0,
-        format_func=lambda value: "Please select" if value == "" else value,
+        OCCUPATION_FIT_OPTIONS,
+        index=OCCUPATION_FIT_OPTIONS.index(current_occupation_fit) if current_occupation_fit in OCCUPATION_FIT_OPTIONS else None,
         key="occupation_fit_radio",
     )
 
