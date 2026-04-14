@@ -37,36 +37,35 @@ questions = [
     ("I am always alert to the abuse of AI Agent technology", "ai_abuse"),
 ]
 
-with st.form("page6_form"):
-    st.markdown("**Which description best fits your occupation?**")
-    current_occupation_fit = st.session_state.get("occupation_fit_radio", "")
-    occupation_fit_value = st.radio(
-        "My occupation requires...",
-        OCCUPATION_FIT_OPTIONS,
-        index=OCCUPATION_FIT_OPTIONS.index(current_occupation_fit) if current_occupation_fit in OCCUPATION_FIT_OPTIONS else None,
-        key="occupation_fit_radio",
+st.markdown("**Which description best fits your occupation?**")
+current_occupation_fit = st.session_state.get("occupation_fit_radio", "")
+occupation_fit_value = st.radio(
+    "My occupation requires...",
+    OCCUPATION_FIT_OPTIONS,
+    index=OCCUPATION_FIT_OPTIONS.index(current_occupation_fit) if current_occupation_fit in OCCUPATION_FIT_OPTIONS else None,
+    key="occupation_fit_radio",
+)
+
+question_values = {}
+for question_text, question_key in questions:
+    display_text = question_text
+    if question_key == "attention_check":
+        display_text = "⚠️ " + display_text
+    st.markdown(f"**{display_text}**")
+    question_values[question_key] = st.select_slider(
+        question_key,
+        options=likert_options,
+        value=st.session_state[question_key] if st.session_state[question_key] in likert_options else "Neutral",
+        label_visibility="collapsed",
+        key=f"{question_key}_slider",
     )
 
-    question_values = {}
-    for question_text, question_key in questions:
-        display_text = question_text
-        if question_key == "attention_check":
-            display_text = "⚠️ " + display_text
-        st.markdown(f"**{display_text}**")
-        question_values[question_key] = st.select_slider(
-            question_key,
-            options=likert_options,
-            value=st.session_state[question_key] if st.session_state[question_key] in likert_options else "Neutral",
-            label_visibility="collapsed",
-            key=f"{question_key}_slider",
-        )
-
-    st.markdown("---")
-    col_prev, _, col_next = st.columns([0.2, 0.65, 0.15])
-    with col_prev:
-        page6_prev = st.form_submit_button("← Previous")
-    with col_next:
-        page6_next = st.form_submit_button("Next →")
+st.markdown("---")
+col_prev, _, col_next = st.columns([0.2, 0.65, 0.15])
+with col_prev:
+    page6_prev = st.button("← Previous")
+with col_next:
+    page6_next = st.button("Next →")
 
 if page6_prev:
     go_to_page(5)
@@ -80,9 +79,6 @@ if page6_next:
     if missing_answer:
         st.error(f"Please answer: {missing_answer}")
         st.stop()
-
-    for question_key, selected_value in question_values.items():
-        st.session_state[question_key] = selected_value
 
     st.session_state.occupation_fit_choice = occupation_fit_value
 
