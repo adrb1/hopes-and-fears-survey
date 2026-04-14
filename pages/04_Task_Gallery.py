@@ -94,7 +94,7 @@ if st.session_state.selected_task is not None:
                 """,
                 unsafe_allow_html=True,
             )
-            st.markdown(f"**AI CAPABILITY:** {task['capability']}")
+            st.markdown(f"**AI AGENT CAPABILITY:** {task['capability']}")
             st.markdown(f"**EXAMPLE TECHNOLOGY:** {task['example_tech']}")
             st.markdown("**RISK ANALYSIS:**")
             st.markdown(task["risk_analysis"])

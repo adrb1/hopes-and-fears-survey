@@ -18,22 +18,22 @@ st.markdown(
 st.markdown(
     """<div id='hf-consent-scrollbox' style='max-height: 360px; overflow-y: auto; border: 1px solid #d1d5db; border-radius: 8px; padding: 16px 18px; background: #ffffff;'>
 <h4 style='margin-top:0;'>GENERAL INFORMATION</h4>
-<p>You are invited to participate in a research study examining how people feel about AI agents and make decisions about delegating workplace tasks to agents. The aim of this study is to better understand which tasks individuals prefer to retain and which they are willing to delegate to AI, in order to inform responsible AI adoption in professional settings.</p>
+<p>You are invited to participate in a research study examining how people feel about AI Agents and make decisions about delegating workplace tasks to agents. The aim of this study is to better understand which tasks individuals prefer to retain and which they are willing to delegate to AI Agents, in order to inform responsible AI Agent adoption in professional settings.</p>
 
 <h4>PROCEDURE</h4>
 <p>Participation involves completing an online survey, which will take approximately 10-15 minutes.</p>
 <p>During the survey, you will be asked to:</p>
 <ul>
-<li>Briefly describe your hopes and concerns regarding the use of AI in the workplace.</li>
-<li>Review short descriptions of AI capabilities related to tasks in your occupation, to ensure a shared understanding of what AI systems can do.</li>
-<li>Compare pairs of workplace tasks and indicate which you would prefer to perform yourself if AI could perform both tasks equally well.</li>
+<li>Briefly describe your hopes and concerns regarding the use of AI Agents in the workplace.</li>
+<li>Review short descriptions of AI Agent capabilities related to tasks in your occupation, to ensure a shared understanding of what AI Agent systems can do.</li>
+<li>Compare pairs of workplace tasks and indicate which you would prefer to perform yourself if AI Agents could perform both tasks equally well.</li>
 <li>Answer a small number of background questions (e.g. age, gender, country, education, and profession).</li>
 </ul>
-<p>The study is designed to examine how individuals form preferences about task delegation to AI under different informational conditions.</p>
+<p>The study is designed to examine how individuals form preferences about task delegation to AI Agents under different informational conditions.</p>
 
 <h4>RISKS AND BENEFITS</h4>
 <p><strong>Risks:</strong> This study does not involve physical or medical risks. However, as with any online survey, there is a minimal risk related to data privacy. Appropriate safeguards are in place to minimise this risk.</p>
-<p><strong>Benefits:</strong> There is no direct personal benefit from participation. However, the study contributes to research on AI and work, and may inform policies and organisational practices related to responsible AI use.</p>
+<p><strong>Benefits:</strong> There is no direct personal benefit from participation. However, the study contributes to research on AI Agents and work, and may inform policies and organisational practices related to responsible AI Agent use.</p>
 
 <h4>CONFIDENTIALITY AND DATA PROTECTION</h4>
 <p>Your responses will be pseudonymised and stored securely in accordance with the General Data Protection Regulation (GDPR).</p>

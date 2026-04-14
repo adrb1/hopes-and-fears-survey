@@ -38,8 +38,7 @@ PAGE_PATHS = {
 
 DEFAULT_JOB_ROLES = [
     "Software Engineer",
-    "Data Analyst",
-    "Teacher/Educator",
+    "Teacher / Educator",
     "Healthcare Professional",
     "Business Manager",
     "Marketing Professional",
@@ -70,6 +69,15 @@ LIKERT_SCALE_OPTIONS = [
     "Strongly Agree",
 ]
 
+AGE_GROUP_OPTIONS = [
+    "18-24 years old",
+    "25-34 years old",
+    "35-44 years old",
+    "45-54 years old",
+    "55-64 years old",
+    "65+ years old",
+]
+
 OCCUPATION_FIT_OPTIONS = [
     "My occupation requires minimal prior experience or training, potentially needs a high school diploma or GED, and typically involves a brief training period of a few days to a few months.",
     "My occupation requires a high school diploma, several months to a year of training, and often involve assisting others.",
@@ -87,9 +95,9 @@ MOCK_TASKS = [
         "automation_level": "HIGH",
         "description": "Process all correspondence and paperwork related to accounts.",
         "capability": "Document processing and automated correspondence management systems can fully handle standardized communications, form completion, and administrative paperwork with minimal human oversight.",
-        "example_tech": "AI-powered CRM systems like Salesforce Einstein or HubSpot AI can automatically process, categorize, and respond to routine correspondence.",
+        "example_tech": "AI Agent-powered CRM systems like Salesforce Einstein or HubSpot AI Agent can automatically process, categorize, and respond to routine correspondence.",
         "dimensions": ["Mental", "Individual", "Routine", "Easy"],
-        "risk_analysis": "High risk due to potential errors in automated correspondence that could damage professional relationships. AI may misinterpret context or tone, leading to inappropriate responses. Requires careful monitoring and human oversight for complex communications.",
+        "risk_analysis": "High risk due to potential errors in automated correspondence that could damage professional relationships. AI Agents may misinterpret context or tone, leading to inappropriate responses. Requires careful monitoring and human oversight for complex communications.",
     },
     {
         "id": 2,
@@ -97,10 +105,10 @@ MOCK_TASKS = [
         "risk_level": "LOW",
         "automation_level": "HIGH",
         "description": "Generate lesson plans tailored to different student levels and educational needs.",
-        "capability": "AI can analyze curriculum standards and student data to create customized, adaptive lesson plans that cater to diverse learning styles and pace.",
-        "example_tech": "AI tools like ChatGPT, Google's NotebookLM, and specialized education platforms can generate structured lesson plans in minutes.",
+        "capability": "AI Agents can analyze curriculum standards and student data to create customized, adaptive lesson plans that cater to diverse learning styles and pace.",
+        "example_tech": "AI Agent tools like ChatGPT, Google's NotebookLM, and specialized education platforms can generate structured lesson plans in minutes.",
         "dimensions": ["Mental", "Individual", "Routine", "Easy"],
-        "risk_analysis": "Low risk as AI-generated lesson plans can be reviewed and customized by teachers. The technology enhances efficiency while maintaining educational quality and teacher expertise.",
+        "risk_analysis": "Low risk as AI Agent-generated lesson plans can be reviewed and customized by teachers. The technology enhances efficiency while maintaining educational quality and teacher expertise.",
     },
     {
         "id": 3,
@@ -108,10 +116,10 @@ MOCK_TASKS = [
         "risk_level": "MEDIUM",
         "automation_level": "MEDIUM",
         "description": "Schedule and coordinate meetings across teams and time zones.",
-        "capability": "AI can analyze calendars, preferences, and time zones to find optimal meeting times and send invitations automatically.",
-        "example_tech": "Tools like Microsoft Copilot for Outlook and scheduling assistants can automate meeting coordination.",
+        "capability": "AI Agents can analyze calendars, preferences, and time zones to find optimal meeting times and send invitations automatically.",
+        "example_tech": "Tools like Microsoft Copilot for Outlook and AI Agent scheduling assistants can automate meeting coordination.",
         "dimensions": ["Mental", "Routine", "Easy"],
-        "risk_analysis": "Medium risk as scheduling conflicts or misinterpretations of availability could occur. However, most scheduling issues are recoverable and AI can significantly reduce coordination overhead.",
+        "risk_analysis": "Medium risk as scheduling conflicts or misinterpretations of availability could occur. However, most scheduling issues are recoverable and AI Agents can significantly reduce coordination overhead.",
     },
     {
         "id": 4,
@@ -119,10 +127,10 @@ MOCK_TASKS = [
         "risk_level": "LOW",
         "automation_level": "HIGH",
         "description": "Analyze student performance data and generate insights.",
-        "capability": "AI can process large datasets, identify patterns, and generate actionable insights on student learning trends and areas needing support.",
-        "example_tech": "Learning analytics platforms powered by AI can track progress and recommend interventions.",
+        "capability": "AI Agents can process large datasets, identify patterns, and generate actionable insights on student learning trends and areas needing support.",
+        "example_tech": "Learning analytics platforms powered by AI Agents can track progress and recommend interventions.",
         "dimensions": ["Mental", "Individual", "Easy"],
-        "risk_analysis": "Low risk as AI analytics provide data-driven insights that complement teacher judgment. Teachers retain final decision-making authority while benefiting from comprehensive data analysis.",
+        "risk_analysis": "Low risk as AI Agent analytics provide data-driven insights that complement teacher judgment. Teachers retain final decision-making authority while benefiting from comprehensive data analysis.",
     },
     {
         "id": 5,
@@ -130,10 +138,10 @@ MOCK_TASKS = [
         "risk_level": "MEDIUM",
         "automation_level": "MEDIUM",
         "description": "Compose and send routine emails.",
-        "capability": "AI can draft professional emails based on templates and context, significantly reducing composition time.",
-        "example_tech": "AI writing assistants like Grammarly AI and email plugins can auto-generate email content.",
+        "capability": "AI Agents can draft professional emails based on templates and context, significantly reducing composition time.",
+        "example_tech": "AI Agent writing assistants like Grammarly AI and email plugins can auto-generate email content.",
         "dimensions": ["Mental", "Routine", "Easy"],
-        "risk_analysis": "Medium risk due to potential miscommunication from AI-generated content. Tone, context, and nuanced language may not be perfectly captured, requiring human review for important communications.",
+        "risk_analysis": "Medium risk due to potential miscommunication from AI Agent-generated content. Tone, context, and nuanced language may not be perfectly captured, requiring human review for important communications.",
     },
     {
         "id": 6,
@@ -141,10 +149,10 @@ MOCK_TASKS = [
         "risk_level": "MEDIUM",
         "automation_level": "MEDIUM",
         "description": "Create educational content, summaries, and explanations.",
-        "capability": "AI can generate diverse content formats from text to multimedia, adapting to different learning preferences.",
-        "example_tech": "Generative AI models like GPT-4 and specialized content creation tools can produce educational materials.",
+        "capability": "AI Agents can generate diverse content formats from text to multimedia, adapting to different learning preferences.",
+        "example_tech": "Generative AI Agent models like GPT-4 and specialized content creation tools can produce educational materials.",
         "dimensions": ["Mental", "Individual"],
-        "risk_analysis": "Medium risk as AI-generated content may lack depth or contain inaccuracies. Educational content requires accuracy and pedagogical expertise, so human review and customization are essential.",
+        "risk_analysis": "Medium risk as AI Agent-generated content may lack depth or contain inaccuracies. Educational content requires accuracy and pedagogical expertise, so human review and customization are essential.",
     },
     {
         "id": 7,
@@ -152,10 +160,10 @@ MOCK_TASKS = [
         "risk_level": "HIGH",
         "automation_level": "MEDIUM",
         "description": "Grade assignments and provide feedback.",
-        "capability": "AI can evaluate objective assessments and provide personalized feedback, though subjective work still benefits from human review.",
-        "example_tech": "AI-powered grading systems can score tests and essays with human-in-the-loop review.",
+        "capability": "AI Agents can evaluate objective assessments and provide personalized feedback, though subjective work still benefits from human review.",
+        "example_tech": "AI Agent-powered grading systems can score tests and essays with human-in-the-loop review.",
         "dimensions": ["Routine", "Easy"],
-        "risk_analysis": "High risk due to the subjective nature of assessment and potential bias in AI grading algorithms. Student grades significantly impact educational and career opportunities, requiring human judgment.",
+        "risk_analysis": "High risk due to the subjective nature of assessment and potential bias in AI Agent grading algorithms. Student grades significantly impact educational and career opportunities, requiring human judgment.",
     },
     {
         "id": 8,
@@ -163,10 +171,10 @@ MOCK_TASKS = [
         "risk_level": "LOW",
         "automation_level": "HIGH",
         "description": "Monitor student progress and flag concerns.",
-        "capability": "Continuous AI monitoring can track learning metrics and alert educators to struggling students in real-time.",
-        "example_tech": "Learning management systems with AI analytics provide real-time student progress monitoring.",
+        "capability": "Continuous AI Agent monitoring can track learning metrics and alert educators to struggling students in real-time.",
+        "example_tech": "Learning management systems with AI Agent analytics provide real-time student progress monitoring.",
         "dimensions": ["Mental", "Routine"],
-        "risk_analysis": "Low risk as AI monitoring serves as an early warning system that enhances teacher effectiveness. Teachers can intervene based on AI alerts while maintaining oversight of student development.",
+        "risk_analysis": "Low risk as AI Agent monitoring serves as an early warning system that enhances teacher effectiveness. Teachers can intervene based on AI Agent alerts while maintaining oversight of student development.",
     },
     {
         "id": 9,
@@ -174,7 +182,7 @@ MOCK_TASKS = [
         "risk_level": "HIGH",
         "automation_level": "HIGH",
         "description": "Moderate user-generated content and discussions.",
-        "capability": "AI can identify inappropriate content, spam, and policy violations across large volumes of text and media.",
+        "capability": "AI Agents can identify inappropriate content, spam, and policy violations across large volumes of text and media.",
         "example_tech": "Content moderation APIs and platforms use machine learning for real-time filtering.",
         "dimensions": ["Routine", "Easy"],
         "risk_analysis": "High risk due to potential false positives/negatives in content detection. Over-moderation can suppress valid expression, while under-moderation can allow harmful content. Requires careful algorithm tuning and human oversight.",
@@ -185,10 +193,10 @@ MOCK_TASKS = [
         "risk_level": "LOW",
         "automation_level": "HIGH",
         "description": "Provide personalized tutoring and one-on-one support.",
-        "capability": "AI tutors can adapt to individual learning speeds, answer questions 24/7, and provide unlimited practice with feedback.",
-        "example_tech": "AI tutoring platforms like Carnegie Learning and Squirrel AI offer adaptive learning experiences.",
+        "capability": "AI Agent tutors can adapt to individual learning speeds, answer questions 24/7, and provide unlimited practice with feedback.",
+        "example_tech": "AI Agent tutoring platforms like Carnegie Learning and Squirrel AI offer adaptive learning experiences.",
         "dimensions": ["Mental", "Individual"],
-        "risk_analysis": "Low risk as AI tutoring supplements rather than replaces human instruction. Students benefit from 24/7 access to practice and immediate feedback while teachers focus on complex learning needs.",
+        "risk_analysis": "Low risk as AI Agent tutoring supplements rather than replaces human instruction. Students benefit from 24/7 access to practice and immediate feedback while teachers focus on complex learning needs.",
     },
     {
         "id": 11,
@@ -196,10 +204,10 @@ MOCK_TASKS = [
         "risk_level": "LOW",
         "automation_level": "HIGH",
         "description": "Enter data into systems and databases.",
-        "capability": "AI can extract, validate, and enter data with high accuracy, reducing manual data entry errors.",
-        "example_tech": "RPA tools and AI OCR systems automate data entry from various sources.",
+        "capability": "AI Agents can extract, validate, and enter data with high accuracy, reducing manual data entry errors.",
+        "example_tech": "RPA tools and AI Agent OCR systems automate data entry from various sources.",
         "dimensions": ["Routine", "Easy"],
-        "risk_analysis": "Low risk as data entry is highly automatable with minimal consequences for errors. AI can achieve higher accuracy than manual entry while freeing humans for more valuable tasks.",
+        "risk_analysis": "Low risk as data entry is highly automatable with minimal consequences for errors. AI Agents can achieve higher accuracy than manual entry while freeing humans for more valuable tasks.",
     },
     {
         "id": 12,
@@ -207,10 +215,10 @@ MOCK_TASKS = [
         "risk_level": "MEDIUM",
         "automation_level": "MEDIUM",
         "description": "Design and develop new curricula.",
-        "capability": "AI can assist in curriculum development by analyzing standards, suggesting best practices, and ensuring alignment.",
-        "example_tech": "AI curriculum tools can help map learning objectives and suggest content sequences.",
+        "capability": "AI Agents can assist in curriculum development by analyzing standards, suggesting best practices, and ensuring alignment.",
+        "example_tech": "AI Agent curriculum tools can help map learning objectives and suggest content sequences.",
         "dimensions": ["Mental", "Individual"],
-        "risk_analysis": "Medium risk as curriculum design requires deep pedagogical knowledge and cultural context. AI can assist but cannot replace the expertise needed for comprehensive educational program development.",
+        "risk_analysis": "Medium risk as curriculum design requires deep pedagogical knowledge and cultural context. AI Agents can assist but cannot replace the expertise needed for comprehensive educational program development.",
     },
 ]
 
@@ -596,13 +604,7 @@ class ParticipantProfile(Base):
     participant_id = Column(BigInteger, ForeignKey("participants.participant_id"), unique=True, nullable=False)
     age_group = Column(
         Enum(
-            "Under 18",
-            "18-24 years old",
-            "25-34 years old",
-            "35-44 years old",
-            "45-54 years old",
-            "55-64 years old",
-            "65+ years old",
+            *AGE_GROUP_OPTIONS,
             name="participant_profile_age_group_enum",
         )
     )
@@ -704,10 +706,24 @@ def ensure_participant_attitudes_after_columns():
             conn.execute(text(f"ALTER TABLE participant_attitudes ADD COLUMN {col_name} {col_type}"))
 
 
+def ensure_participant_profile_age_group_enum():
+    if DB_INIT_ERROR is not None:
+        return
+
+    desired_enum = ", ".join(f"'{value}'" for value in AGE_GROUP_OPTIONS)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                f"ALTER TABLE participant_profile MODIFY COLUMN age_group ENUM({desired_enum}) NULL"
+            )
+        )
+
+
 @st.cache_resource(show_spinner=False)
 def initialize_database_schema():
     Base.metadata.create_all(bind=engine)
     ensure_participant_attitudes_after_columns()
+    ensure_participant_profile_age_group_enum()
 
 
 try:
@@ -757,22 +773,22 @@ def render_consent_page():
     st.markdown(
         """<div id='hf-consent-scrollbox' style='max-height: 360px; overflow-y: auto; border: 1px solid #d1d5db; border-radius: 8px; padding: 16px 18px; background: #ffffff;'>
 <h4 style='margin-top:0;'>GENERAL INFORMATION</h4>
-<p>You are invited to participate in a research study examining how people feel about AI agents and make decisions about delegating workplace tasks to agents. The aim of this study is to better understand which tasks individuals prefer to retain and which they are willing to delegate to AI, in order to inform responsible AI adoption in professional settings.</p>
+<p>You are invited to participate in a research study examining how people feel about AI Agents and make decisions about delegating workplace tasks to agents. The aim of this study is to better understand which tasks individuals prefer to retain and which they are willing to delegate to AI Agents, in order to inform responsible AI Agent adoption in professional settings.</p>
 
 <h4>PROCEDURE</h4>
 <p>Participation involves completing an online survey, which will take approximately 10-15 minutes.</p>
 <p>During the survey, you will be asked to:</p>
 <ul>
-<li>Briefly describe your hopes and concerns regarding the use of AI in the workplace.</li>
-<li>Review short descriptions of AI capabilities related to tasks in your occupation, to ensure a shared understanding of what AI systems can do.</li>
-<li>Compare pairs of workplace tasks and indicate which you would prefer to perform yourself if AI could perform both tasks equally well.</li>
+<li>Briefly describe your hopes and concerns regarding the use of AI Agents in the workplace.</li>
+<li>Review short descriptions of AI Agent capabilities related to tasks in your occupation, to ensure a shared understanding of what AI Agent systems can do.</li>
+<li>Compare pairs of workplace tasks and indicate which you would prefer to perform yourself if AI Agents could perform both tasks equally well.</li>
 <li>Answer a small number of background questions (e.g. age, gender, country, education, and profession).</li>
 </ul>
-<p>The study is designed to examine how individuals form preferences about task delegation to AI under different informational conditions.</p>
+<p>The study is designed to examine how individuals form preferences about task delegation to AI Agents under different informational conditions.</p>
 
 <h4>RISKS AND BENEFITS</h4>
 <p><strong>Risks:</strong> This study does not involve physical or medical risks. However, as with any online survey, there is a minimal risk related to data privacy. Appropriate safeguards are in place to minimise this risk.</p>
-<p><strong>Benefits:</strong> There is no direct personal benefit from participation. However, the study contributes to research on AI and work, and may inform policies and organisational practices related to responsible AI use.</p>
+<p><strong>Benefits:</strong> There is no direct personal benefit from participation. However, the study contributes to research on AI Agents and work, and may inform policies and organisational practices related to responsible AI Agent use.</p>
 
 <h4>CONFIDENTIALITY AND DATA PROTECTION</h4>
 <p>Your responses will be pseudonymised and stored securely in accordance with the General Data Protection Regulation (GDPR).</p>
@@ -1204,7 +1220,7 @@ def load_tasks(occupation_name=None):
                 "risk_level": color_to_risk.get((task.color_code or "").lower(), "MEDIUM"),
                 "automation_level": "MEDIUM",
                 "description": task.task_description or "",
-                "capability": (task.task_description or "").strip() or "No AI capability description provided for this task.",
+                "capability": (task.task_description or "").strip() or "No AI Agent capability description provided for this task.",
                 "example_tech": ", ".join(
                     [
                         value.strip()

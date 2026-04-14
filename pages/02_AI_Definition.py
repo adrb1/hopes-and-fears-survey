@@ -20,11 +20,11 @@ st.markdown("---")
 st.markdown("**[AI Agent Definition]**")
 st.markdown(AI_AGENT_DEFINITION)
 st.markdown("---")
-st.markdown("**How would you describe Artificial Intelligence (AI) Agents to a friend?**")
+st.markdown("**How would you describe AI Agents to a friend?**")
 
 with st.form("page2_form"):
     ai_description = st.text_area(
-        "AI description",
+        "AI Agent description",
         value=st.session_state.ai_description,
         height=120,
         placeholder="Enter your description here...",

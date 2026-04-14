@@ -9,8 +9,8 @@ render_view_anchor(anchor_id)
 st.markdown(
     """
     <div style='text-align: center; margin-bottom: 30px;'>
-        <h2 style='font-weight: bold; letter-spacing: 2px;'>YOUR EXPERIENCE WITH AI</h2>
-        <p>Please rate your agreement with the following statements about your occupation and AI usage.</p>
+        <h2 style='font-weight: bold; letter-spacing: 2px;'>YOUR EXPERIENCE WITH AI AGENTS</h2>
+        <p>Please rate your agreement with the following statements about your occupation and AI Agent usage.</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -21,18 +21,18 @@ likert_values = {opt: i for i, opt in enumerate(LIKERT_SCALE_OPTIONS)}
 page6_questions = [
     {"type": "occupation_fit", "text": "Which description best fits your occupation?", "key": "occupation_fit_radio", "options": [""] + OCCUPATION_FIT_OPTIONS},
     {"type": "likert", "text": "I can distinguish between smart devices and non-smart devices", "key": "smart_devices"},
-    {"type": "likert", "text": "I do not know how AI technology can help me", "key": "ai_help"},
-    {"type": "likert", "text": "I can identify the AI technology employed in the applications and products I use", "key": "ai_tech_id"},
-    {"type": "likert", "text": "I can skillfully use AI applications or products to help me with my daily work", "key": "ai_skillful"},
-    {"type": "likert", "text": "It is usually hard for me to learn to use a new AI application or product", "key": "ai_learning"},
-    {"type": "likert", "text": "I can use AI applications or products to improve my work efficiency", "key": "ai_efficiency"},
-    {"type": "likert", "text": "I can evaluate the capabilities and limitations of an AI application or product after using it for a while", "key": "ai_eval"},
+    {"type": "likert", "text": "I do not know how AI Agent technology can help me", "key": "ai_help"},
+    {"type": "likert", "text": "I can identify the AI Agent technology employed in the applications and products I use", "key": "ai_tech_id"},
+    {"type": "likert", "text": "I can skillfully use AI Agent applications or products to help me with my daily work", "key": "ai_skillful"},
+    {"type": "likert", "text": "It is usually hard for me to learn to use a new AI Agent application or product", "key": "ai_learning"},
+    {"type": "likert", "text": "I can use AI Agent applications or products to improve my work efficiency", "key": "ai_efficiency"},
+    {"type": "likert", "text": "I can evaluate the capabilities and limitations of an AI Agent application or product after using it for a while", "key": "ai_eval"},
     {"type": "likert", "text": "I can choose a proper solution from various solutions provided by a smart agent", "key": "ai_solution"},
-    {"type": "likert", "text": "I believe AI technologies are mainly developed by little squirrels", "key": "attention_check"},
-    {"type": "likert", "text": "I can choose the most appropriate AI application or product from a variety for a particular task", "key": "ai_choice"},
-    {"type": "likert", "text": "I always comply with ethical principles when using AI applications or products", "key": "ethical"},
-    {"type": "likert", "text": "I am never alert to privacy and information security issues when using AI applications or products", "key": "privacy"},
-    {"type": "likert", "text": "I am always alert to the abuse of AI technology", "key": "ai_abuse"},
+    {"type": "likert", "text": "I believe AI Agent technologies are mainly developed by little squirrels", "key": "attention_check"},
+    {"type": "likert", "text": "I can choose the most appropriate AI Agent application or product from a variety for a particular task", "key": "ai_choice"},
+    {"type": "likert", "text": "I always comply with ethical principles when using AI Agent applications or products", "key": "ethical"},
+    {"type": "likert", "text": "I am never alert to privacy and information security issues when using AI Agent applications or products", "key": "privacy"},
+    {"type": "likert", "text": "I am always alert to the abuse of AI Agent technology", "key": "ai_abuse"},
 ]
 
 st.session_state.page6_total_questions = len(page6_questions)
@@ -79,7 +79,7 @@ if page6_next:
         st.session_state.page6_question_index = idx + 1
         st.rerun()
     if likert_values[st.session_state["attention_check"]] >= 2:
-        st.error("⚠️ Attention check: Your response to the AI squirrels question suggests you may not be answering carefully. Please review your responses.")
+        st.error("⚠️ Attention check: Your response to the AI Agent squirrels question suggests you may not be answering carefully. Please review your responses.")
         st.stop()
     st.session_state.pair_index = 0
     go_to_page(7)
