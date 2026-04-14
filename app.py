@@ -396,12 +396,6 @@ class ParticipantTaskPairChoices(Base):
     choice_made = Column(Enum("left", "right", "skip", name="participant_task_pair_choices_choice_made_enum"), nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow, server_default=text("CURRENT_TIMESTAMP"))
 
-try:
-    Base.metadata.create_all(bind=engine)
-except Exception as exc:
-    DB_INIT_ERROR = str(exc).splitlines()[0]
-
-
 def ensure_participant_attitudes_after_columns():
     if DB_INIT_ERROR is not None:
         return
@@ -427,7 +421,16 @@ def ensure_participant_attitudes_after_columns():
             conn.execute(text(f"ALTER TABLE participant_attitudes ADD COLUMN {col_name} {col_type}"))
 
 
-ensure_participant_attitudes_after_columns()
+@st.cache_resource(show_spinner=False)
+def initialize_database_schema():
+    Base.metadata.create_all(bind=engine)
+    ensure_participant_attitudes_after_columns()
+
+
+try:
+    initialize_database_schema()
+except Exception as exc:
+    DB_INIT_ERROR = str(exc).splitlines()[0]
 
 # Helpers
 def get_or_create_occupation(db, occupation_name):
@@ -1244,18 +1247,21 @@ if st.session_state.page == 0:
     )
 
     st.markdown("---")
-    consent_read = st.checkbox("I have read and understood the information provided above.", key="consent_read")
-    consent_age = st.checkbox("I confirm that I am at least 18 years old.", key="consent_age")
-    consent_participate = st.checkbox("I voluntarily agree to participate in this study.", key="consent_participate")
+    with st.form("page0_form"):
+        consent_read = st.checkbox("I have read and understood the information provided above.", key="consent_read")
+        consent_age = st.checkbox("I confirm that I am at least 18 years old.", key="consent_age")
+        consent_participate = st.checkbox("I voluntarily agree to participate in this study.", key="consent_participate")
 
-    col_empty, col_start = st.columns([0.75, 0.25])
-    with col_start:
-        if st.button("Proceed to survey →", key="consent_next"):
-            if consent_read and consent_age and consent_participate:
-                st.session_state.page = 1
-                st.rerun()
-            else:
-                st.error("Please tick all consent boxes before proceeding.")
+        col_empty, col_start = st.columns([0.75, 0.25])
+        with col_start:
+            consent_next = st.form_submit_button("Proceed to survey →")
+
+    if consent_next:
+        if consent_read and consent_age and consent_participate:
+            st.session_state.page = 1
+            st.rerun()
+        else:
+            st.error("Please tick all consent boxes before proceeding.")
 
     components.html(
         """
@@ -1350,44 +1356,44 @@ elif st.session_state.page == 1:
     
     st.markdown("---")
     
-    # Prolific ID input
-    st.markdown("**Please enter your Prolific ID**")
-    prolific_id = st.text_input("Prolific ID", value=st.session_state.prolific_id, key="prolific_input")
-    
-    # Job Role selection
-    st.markdown("**What is your occupation?**")
     job_role_options = [""] + job_roles
     job_role_index = 0
     if st.session_state.job_role in job_role_options:
         job_role_index = job_role_options.index(st.session_state.job_role)
 
-    job_role = st.selectbox(
-        "Select your job role:",
-        job_role_options,
-        index=job_role_index,
-        format_func=lambda x: "Please select your job role" if x == "" else x,
-        key="job_input",
-    )
-    
-    # Navigation
-    col_prev1, col_dummy1, col_next1 = st.columns([0.2, 0.65, 0.15])
-    with col_prev1:
-        if st.button("← Previous", key="page1_prev"):
-            st.session_state.page = 0
-            st.rerun()
-    with col_next1:
-        if st.button("Next →", key="page1_next"):
-            if not prolific_id.strip():
-                st.error("Please enter your Prolific ID")
-            elif not job_role:
-                st.error("Please select your job role")
-            else:
-                st.session_state.prolific_id = prolific_id
-                st.session_state.job_role = job_role
-                st.session_state.participant_id = None
+    with st.form("page1_form"):
+        st.markdown("**Please enter your Prolific ID**")
+        prolific_id = st.text_input("Prolific ID", value=st.session_state.prolific_id, key="prolific_input")
 
-                st.session_state.page = 2
-                st.rerun()
+        st.markdown("**What is your occupation?**")
+        job_role = st.selectbox(
+            "Select your job role:",
+            job_role_options,
+            index=job_role_index,
+            format_func=lambda x: "Please select your job role" if x == "" else x,
+            key="job_input",
+        )
+
+        col_prev1, col_dummy1, col_next1 = st.columns([0.2, 0.65, 0.15])
+        with col_prev1:
+            page1_prev = st.form_submit_button("← Previous")
+        with col_next1:
+            page1_next = st.form_submit_button("Next →")
+
+    if page1_prev:
+        st.session_state.page = 0
+        st.rerun()
+    if page1_next:
+        if not prolific_id.strip():
+            st.error("Please enter your Prolific ID")
+        elif not job_role:
+            st.error("Please select your job role")
+        else:
+            st.session_state.prolific_id = prolific_id
+            st.session_state.job_role = job_role
+            st.session_state.participant_id = None
+            st.session_state.page = 2
+            st.rerun()
 
 # PAGE 2: AI Definition + Description
 elif st.session_state.page == 2:
@@ -1409,33 +1415,35 @@ elif st.session_state.page == 2:
     
     st.markdown("**How would you describe Artificial Intelligence (AI) Agents to a friend?**")
     
-    ai_description = st.text_area(
-        "AI description",
-        value=st.session_state.ai_description,
-        height=120,
-        placeholder="Enter your description here...",
-        key="ai_desc_input"
-    )
-    
-    st.markdown(f"**{len(ai_description)}/350 (Min. 70 characters)**")
-    
-    # Navigation
-    col_prev2, col_dummy2, col_next2 = st.columns([0.2, 0.65, 0.15])
-    with col_prev2:
-        if st.button("← Previous", key="page2_prev"):
-            st.session_state.page = 1
-            st.rerun()
-    with col_next2:
-        if st.button("Next →", key="page2_next"):
-            if len(ai_description.strip()) < 70:
-                st.error("Please enter at least 70 characters")
-            elif len(ai_description) > 350:
-                st.error("Your response exceeds 350 characters")
-            else:
-                st.session_state.ai_description = ai_description
+    with st.form("page2_form"):
+        ai_description = st.text_area(
+            "AI description",
+            value=st.session_state.ai_description,
+            height=120,
+            placeholder="Enter your description here...",
+            key="ai_desc_input"
+        )
 
-                st.session_state.page = 3
-                st.rerun()
+        st.markdown(f"**{len(ai_description)}/350 (Min. 70 characters)**")
+
+        col_prev2, col_dummy2, col_next2 = st.columns([0.2, 0.65, 0.15])
+        with col_prev2:
+            page2_prev = st.form_submit_button("← Previous")
+        with col_next2:
+            page2_next = st.form_submit_button("Next →")
+
+    if page2_prev:
+        st.session_state.page = 1
+        st.rerun()
+    if page2_next:
+        if len(ai_description.strip()) < 70:
+            st.error("Please enter at least 70 characters")
+        elif len(ai_description) > 350:
+            st.error("Your response exceeds 350 characters")
+        else:
+            st.session_state.ai_description = ai_description
+            st.session_state.page = 3
+            st.rerun()
 
 # PAGE 3: Fears and Hopes Collection
 elif st.session_state.page == 3:
@@ -1448,150 +1456,141 @@ elif st.session_state.page == 3:
     </div>
     """, unsafe_allow_html=True)
     
-    # Two-column layout
-    left_col, right_col = st.columns(2, gap="large")
-    
-    # LEFT COLUMN - FEARS
-    with left_col:
-        st.markdown("""
-        <div style='background-color: #1a1a1a; color: white; padding: 30px; border-radius: 8px;'>
-        <h3 style='text-align: center; margin-bottom: 20px;'>I rate my fears about AI Agents as</h3>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Fear rating slider
-        fears_rating = st.slider(
-            label="Fear Level",
-            min_value=1,
-            max_value=5,
-            value=min(max(st.session_state.fears_rating, 1), 5),
-            step=1,
-            label_visibility="collapsed",
-            key="fears_slider"
-        )
-        
-        # Fear level labels
-        st.markdown("""
-        <div style='display: flex; justify-content: space-between; margin-top: -25px;'>
-            <span style='font-size: 12px; color: #666;'>No fear at all</span>
-            <span style='font-size: 12px; color: #666;'>Terrified</span>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("")
-        st.markdown("**I fear AI Agents because...**")
-        
-        # Fear text input
-        fears_text = st.text_area(
-            label="Fear description",
-            value=st.session_state.fears_text,
-            height=100,
-            placeholder="Write your fears here",
-            label_visibility="collapsed",
-            key="fears_input"
-        )
-        
-        st.markdown(f"**{len(fears_text)}/350 (Min. 70 characters)**")
-        
-        st.markdown("")
-        st.markdown("**To what extent do you believe that your AI Agents fear is shared by most people?**")
-        
-        # Fear sharing - slider
-        fear_sharing_options = ["", "Not at all", "Rarely", "Occasionally", "Moderately", "Often", "Very often", "Almost always"]
-        fears_shared = st.select_slider(
-            label="Fear shared",
-            options=fear_sharing_options,
-            value=st.session_state.fears_shared if st.session_state.fears_shared in fear_sharing_options else "",
-            label_visibility="collapsed",
-            key="fears_shared_input"
-        )
-    
-    # RIGHT COLUMN - HOPES
-    with right_col:
-        st.markdown("""
-        <div style='border: 2px solid #333; padding: 30px; border-radius: 8px; background-color: white;'>
-        <h3 style='text-align: center; margin-bottom: 20px; color: black;'>I rate my hopes about AI Agents as</h3>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Hope rating slider
-        hopes_rating = st.slider(
-            label="Hope Level",
-            min_value=1,
-            max_value=5,
-            value=min(max(st.session_state.hopes_rating, 1), 5),
-            step=1,
-            label_visibility="collapsed",
-            key="hopes_slider"
-        )
-        
-        # Hope level labels
-        st.markdown("""
-        <div style='display: flex; justify-content: space-between; margin-top: -25px;'>
-            <span style='font-size: 12px; color: #666;'>No hope at all</span>
-            <span style='font-size: 12px; color: #666;'>Full of hope</span>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("")
-        st.markdown("**I have hope in AI Agents because...**")
-        
-        # Hope text input
-        hopes_text = st.text_area(
-            label="Hope description",
-            value=st.session_state.hopes_text,
-            height=100,
-            placeholder="Write your hopes here",
-            label_visibility="collapsed",
-            key="hopes_input"
-        )
-        
-        st.markdown(f"**{len(hopes_text)}/350 (Min. 70 characters)**")
-        
-        st.markdown("")
-        st.markdown("**To what extent do you believe that your AI Agents hopes are shared by most people?**")
-        
-        # Hope sharing - slider
-        hope_sharing_options = ["", "Not at all", "Rarely", "Occasionally", "Moderately", "Often", "Very often", "Almost always"]
-        hopes_shared = st.select_slider(
-            label="Hope shared",
-            options=hope_sharing_options,
-            value=st.session_state.hopes_shared if st.session_state.hopes_shared in hope_sharing_options else "",
-            label_visibility="collapsed",
-            key="hopes_shared_input"
-        )
-    
-    # Navigation
-    st.markdown("---")
-    col_prev3, col_dummy3, col_next3 = st.columns([0.2, 0.65, 0.15])
-    with col_prev3:
-        if st.button("← Previous", key="page3_prev"):
-            st.session_state.page = 2
-            st.rerun()
-    with col_next3:
-        if st.button("Next →", key="page3_next"):
-            if len(fears_text.strip()) < 70:
-                st.error("Fears: Please enter at least 70 characters")
-            elif len(fears_text) > 350:
-                st.error("Fears: Your response exceeds 350 characters")
-            elif len(hopes_text.strip()) < 70:
-                st.error("Hopes: Please enter at least 70 characters")
-            elif len(hopes_text) > 350:
-                st.error("Hopes: Your response exceeds 350 characters")
-            elif not fears_shared:
-                st.error("Fears: Please select how widely your fear is shared")
-            elif not hopes_shared:
-                st.error("Hopes: Please select how widely your hope is shared")
-            else:
-                st.session_state.fears_rating = fears_rating
-                st.session_state.hopes_rating = hopes_rating
-                st.session_state.fears_text = fears_text
-                st.session_state.hopes_text = hopes_text
-                st.session_state.fears_shared = fears_shared
-                st.session_state.hopes_shared = hopes_shared
+    with st.form("page3_form"):
+        left_col, right_col = st.columns(2, gap="large")
 
-                st.session_state.page = 4
-                st.rerun()
+        with left_col:
+            st.markdown("""
+            <div style='background-color: #1a1a1a; color: white; padding: 30px; border-radius: 8px;'>
+            <h3 style='text-align: center; margin-bottom: 20px;'>I rate my fears about AI Agents as</h3>
+            </div>
+            """, unsafe_allow_html=True)
+
+            fears_rating = st.slider(
+                label="Fear Level",
+                min_value=1,
+                max_value=5,
+                value=min(max(st.session_state.fears_rating, 1), 5),
+                step=1,
+                label_visibility="collapsed",
+                key="fears_slider"
+            )
+
+            st.markdown("""
+            <div style='display: flex; justify-content: space-between; margin-top: -25px;'>
+                <span style='font-size: 12px; color: #666;'>No fear at all</span>
+                <span style='font-size: 12px; color: #666;'>Terrified</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("")
+            st.markdown("**I fear AI Agents because...**")
+
+            fears_text = st.text_area(
+                label="Fear description",
+                value=st.session_state.fears_text,
+                height=100,
+                placeholder="Write your fears here",
+                label_visibility="collapsed",
+                key="fears_input"
+            )
+
+            st.markdown(f"**{len(fears_text)}/350 (Min. 70 characters)**")
+
+            st.markdown("")
+            st.markdown("**To what extent do you believe that your AI Agents fear is shared by most people?**")
+
+            fear_sharing_options = ["", "Not at all", "Rarely", "Occasionally", "Moderately", "Often", "Very often", "Almost always"]
+            fears_shared = st.select_slider(
+                label="Fear shared",
+                options=fear_sharing_options,
+                value=st.session_state.fears_shared if st.session_state.fears_shared in fear_sharing_options else "",
+                label_visibility="collapsed",
+                key="fears_shared_input"
+            )
+
+        with right_col:
+            st.markdown("""
+            <div style='border: 2px solid #333; padding: 30px; border-radius: 8px; background-color: white;'>
+            <h3 style='text-align: center; margin-bottom: 20px; color: black;'>I rate my hopes about AI Agents as</h3>
+            </div>
+            """, unsafe_allow_html=True)
+
+            hopes_rating = st.slider(
+                label="Hope Level",
+                min_value=1,
+                max_value=5,
+                value=min(max(st.session_state.hopes_rating, 1), 5),
+                step=1,
+                label_visibility="collapsed",
+                key="hopes_slider"
+            )
+
+            st.markdown("""
+            <div style='display: flex; justify-content: space-between; margin-top: -25px;'>
+                <span style='font-size: 12px; color: #666;'>No hope at all</span>
+                <span style='font-size: 12px; color: #666;'>Full of hope</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("")
+            st.markdown("**I have hope in AI Agents because...**")
+
+            hopes_text = st.text_area(
+                label="Hope description",
+                value=st.session_state.hopes_text,
+                height=100,
+                placeholder="Write your hopes here",
+                label_visibility="collapsed",
+                key="hopes_input"
+            )
+
+            st.markdown(f"**{len(hopes_text)}/350 (Min. 70 characters)**")
+
+            st.markdown("")
+            st.markdown("**To what extent do you believe that your AI Agents hopes are shared by most people?**")
+
+            hope_sharing_options = ["", "Not at all", "Rarely", "Occasionally", "Moderately", "Often", "Very often", "Almost always"]
+            hopes_shared = st.select_slider(
+                label="Hope shared",
+                options=hope_sharing_options,
+                value=st.session_state.hopes_shared if st.session_state.hopes_shared in hope_sharing_options else "",
+                label_visibility="collapsed",
+                key="hopes_shared_input"
+            )
+
+        st.markdown("---")
+        col_prev3, col_dummy3, col_next3 = st.columns([0.2, 0.65, 0.15])
+        with col_prev3:
+            page3_prev = st.form_submit_button("← Previous")
+        with col_next3:
+            page3_next = st.form_submit_button("Next →")
+
+    if page3_prev:
+        st.session_state.page = 2
+        st.rerun()
+    if page3_next:
+        if len(fears_text.strip()) < 70:
+            st.error("Fears: Please enter at least 70 characters")
+        elif len(fears_text) > 350:
+            st.error("Fears: Your response exceeds 350 characters")
+        elif len(hopes_text.strip()) < 70:
+            st.error("Hopes: Please enter at least 70 characters")
+        elif len(hopes_text) > 350:
+            st.error("Hopes: Your response exceeds 350 characters")
+        elif not fears_shared:
+            st.error("Fears: Please select how widely your fear is shared")
+        elif not hopes_shared:
+            st.error("Hopes: Please select how widely your hope is shared")
+        else:
+            st.session_state.fears_rating = fears_rating
+            st.session_state.hopes_rating = hopes_rating
+            st.session_state.fears_text = fears_text
+            st.session_state.hopes_text = hopes_text
+            st.session_state.fears_shared = fears_shared
+            st.session_state.hopes_shared = hopes_shared
+            st.session_state.page = 4
+            st.rerun()
 
 # PAGE 4: Task Automation Gallery
 elif st.session_state.page == 4:
@@ -1901,78 +1900,82 @@ elif st.session_state.page == 5:
     colour_options = ["", "Red", "Orange", "Yellow", "Green", "Blue", "Indigo", "Violet", "Black", "White"]
     education_options = ["", "Less than High School", "High School", "Some college (no degree)", "Technical Certification", "Associate degree (2-year)", "Bachelor's degree (4-year)", "Master's degree", "Doctoral degree", "Professional degree (JD, MD)", "Other"]
 
-    st.selectbox(
-        "What is your age group?",
-        age_options,
-        index=age_options.index(st.session_state.age_group) if st.session_state.age_group in age_options else 0,
-        format_func=lambda x: "Please select" if x == "" else x,
-        key="age_group",
-    )
-    gender_selected = st.selectbox(
-        "What is your gender identity?",
-        gender_options,
-        index=gender_options.index(st.session_state.gender_identity) if st.session_state.gender_identity in gender_options else 0,
-        format_func=lambda x: "Please select" if x == "" else x,
-        key="gender_identity",
-    )
-    if gender_selected == "Other":
-        st.text_input("Please specify", value=st.session_state.gender_other, key="gender_other")
-    ethnicity_selected = st.selectbox(
-        "Which ethnicity best describes you?",
-        ethnicity_options,
-        index=ethnicity_options.index(st.session_state.ethnicity) if st.session_state.ethnicity in ethnicity_options else 0,
-        format_func=lambda x: "Please select" if x == "" else x,
-        key="ethnicity",
-    )
-    if ethnicity_selected == "Other":
-        st.text_input("Please specify", value=st.session_state.ethnicity_other, key="ethnicity_other")
-    st.selectbox(
-        "What is your favourite colour? (This is an attention check question. Please choose red.)",
-        colour_options,
-        index=colour_options.index(st.session_state.favourite_colour) if st.session_state.favourite_colour in colour_options else 0,
-        format_func=lambda x: "Please select" if x == "" else x,
-        key="favourite_colour",
-    )
-    education_selected = st.selectbox(
-        "What is your highest level of education?",
-        education_options,
-        index=education_options.index(st.session_state.education_level) if st.session_state.education_level in education_options else 0,
-        format_func=lambda x: "Please select" if x == "" else x,
-        key="education_level",
-    )
-    if education_selected == "Other":
-        st.text_input("Please specify", value=st.session_state.education_other, key="education_other")
-    
-    
-    col_prev5, col_dummy5, col_next5 = st.columns([0.2, 0.65, 0.15])
-    with col_prev5:
-        if st.button("← Previous", key="page5_prev"):
-            st.session_state.page = 4
+    with st.form("page5_form"):
+        age_group = st.selectbox(
+            "What is your age group?",
+            age_options,
+            index=age_options.index(st.session_state.age_group) if st.session_state.age_group in age_options else 0,
+            format_func=lambda x: "Please select" if x == "" else x,
+            key="age_group",
+        )
+        gender_selected = st.selectbox(
+            "What is your gender identity?",
+            gender_options,
+            index=gender_options.index(st.session_state.gender_identity) if st.session_state.gender_identity in gender_options else 0,
+            format_func=lambda x: "Please select" if x == "" else x,
+            key="gender_identity",
+        )
+        gender_other = ""
+        if gender_selected == "Other":
+            gender_other = st.text_input("Please specify", value=st.session_state.gender_other, key="gender_other")
+        ethnicity_selected = st.selectbox(
+            "Which ethnicity best describes you?",
+            ethnicity_options,
+            index=ethnicity_options.index(st.session_state.ethnicity) if st.session_state.ethnicity in ethnicity_options else 0,
+            format_func=lambda x: "Please select" if x == "" else x,
+            key="ethnicity",
+        )
+        ethnicity_other = ""
+        if ethnicity_selected == "Other":
+            ethnicity_other = st.text_input("Please specify", value=st.session_state.ethnicity_other, key="ethnicity_other")
+        favourite_colour = st.selectbox(
+            "What is your favourite colour? (This is an attention check question. Please choose red.)",
+            colour_options,
+            index=colour_options.index(st.session_state.favourite_colour) if st.session_state.favourite_colour in colour_options else 0,
+            format_func=lambda x: "Please select" if x == "" else x,
+            key="favourite_colour",
+        )
+        education_selected = st.selectbox(
+            "What is your highest level of education?",
+            education_options,
+            index=education_options.index(st.session_state.education_level) if st.session_state.education_level in education_options else 0,
+            format_func=lambda x: "Please select" if x == "" else x,
+            key="education_level",
+        )
+        education_other = ""
+        if education_selected == "Other":
+            education_other = st.text_input("Please specify", value=st.session_state.education_other, key="education_other")
+
+        col_prev5, col_dummy5, col_next5 = st.columns([0.2, 0.65, 0.15])
+        with col_prev5:
+            page5_prev = st.form_submit_button("← Previous")
+        with col_next5:
+            page5_next = st.form_submit_button("Next →")
+
+    if page5_prev:
+        st.session_state.page = 4
+        st.rerun()
+    if page5_next:
+        if not age_group:
+            st.error("Please fill out your age group")
+        elif not gender_selected:
+            st.error("Please fill out your gender identity")
+        elif gender_selected == "Other" and not gender_other.strip():
+            st.error("Please specify your gender identity")
+        elif not ethnicity_selected:
+            st.error("Please fill out your ethnicity")
+        elif ethnicity_selected == "Other" and not ethnicity_other.strip():
+            st.error("Please specify your ethnicity")
+        elif not favourite_colour.strip():
+            st.error("Please fill out your favourite colour")
+        elif not education_selected:
+            st.error("Please fill out your education level")
+        elif education_selected == "Other" and not education_other.strip():
+            st.error("Please specify your education level")
+        else:
+            st.session_state.page6_question_index = 0
+            st.session_state.page = 6
             st.rerun()
-    with col_next5:
-        if st.button("Next →", key="page5_next"):
-            # Validate required fields
-            if not st.session_state.age_group:
-                st.error("Please fill out your age group")
-            elif not st.session_state.gender_identity:
-                st.error("Please fill out your gender identity")
-            elif st.session_state.gender_identity == "Other" and not st.session_state.gender_other.strip():
-                st.error("Please specify your gender identity")
-            elif not st.session_state.ethnicity:
-                st.error("Please fill out your ethnicity")
-            elif st.session_state.ethnicity == "Other" and not st.session_state.ethnicity_other.strip():
-                st.error("Please specify your ethnicity")
-            elif not st.session_state.favourite_colour.strip():
-                st.error("Please fill out your favourite colour")
-            elif not st.session_state.education_level:
-                st.error("Please fill out your education level")
-            elif st.session_state.education_level == "Other" and not st.session_state.education_other.strip():
-                st.error("Please specify your education level")
-            else:
-                # Prepare final values
-                st.session_state.page6_question_index = 0
-                st.session_state.page = 6
-                st.rerun()
 
 # PAGE 6: AI Behavior and Profession Information
 elif st.session_state.page == 6:
@@ -2030,76 +2033,81 @@ elif st.session_state.page == 6:
     idx = st.session_state.page6_question_index
     current_question = page6_questions[idx]
 
-    st.markdown(f"**Question {idx + 1}/{len(page6_questions)}**")
-    if current_question["type"] == "occupation_fit":
-        st.markdown(f"**{current_question['text']}**")
-        st.selectbox(
-            "Select the best fit:",
-            current_question["options"],
-            format_func=lambda x: "Please select" if x == "" else x,
-            key="occupation_fit_radio"
-        )
-    else:
-        if current_question["key"] not in st.session_state:
-            st.session_state[current_question["key"]] = ""
-
-        display_text = current_question["text"]
-        if current_question["key"] == "attention_check":
-            display_text = "⚠️ " + display_text
-
-        st.markdown(f"**{display_text}**")
-        st.session_state[current_question["key"]] = st.select_slider(
-            "",
-            options=likert_options,
-            value=st.session_state[current_question["key"]] if st.session_state[current_question["key"]] in likert_options else "",
-            label_visibility="collapsed",
-            key=f"{current_question['key']}_slider"
-        )
-
-    st.markdown("---")
-    col_prev, col_dummy, col_next = st.columns([0.2, 0.6, 0.2])
-    with col_prev:
-        if idx > 0:
-            if st.button("← Previous", key="page6_prev"):
-                st.session_state.page6_question_index = idx - 1
-                st.rerun()
+    with st.form("page6_form"):
+        st.markdown(f"**Question {idx + 1}/{len(page6_questions)}**")
+        current_value = None
+        if current_question["type"] == "occupation_fit":
+            st.markdown(f"**{current_question['text']}**")
+            current_value = st.selectbox(
+                "Select the best fit:",
+                current_question["options"],
+                index=current_question["options"].index(st.session_state.get("occupation_fit_radio", "")) if st.session_state.get("occupation_fit_radio", "") in current_question["options"] else 0,
+                format_func=lambda x: "Please select" if x == "" else x,
+                key="occupation_fit_radio"
+            )
         else:
-            if st.button("← Previous", key="page6_prev_page"):
-                st.session_state.page = 5
-                st.rerun()
+            if current_question["key"] not in st.session_state:
+                st.session_state[current_question["key"]] = ""
 
-    with col_next:
-        next_label = "Finish →" if idx == len(page6_questions) - 1 else "Next →"
-        if st.button(next_label, key="page6_next"):
-            if current_question["type"] == "occupation_fit":
-                if not st.session_state.get("occupation_fit_radio"):
-                    st.error("Please select the description that best fits your occupation")
-                    st.stop()
-            else:
-                if not st.session_state.get(current_question["key"]):
-                    st.error("Please select one option before continuing")
-                    st.stop()
+            display_text = current_question["text"]
+            if current_question["key"] == "attention_check":
+                display_text = "⚠️ " + display_text
 
-            if idx < len(page6_questions) - 1:
-                st.session_state.page6_question_index = idx + 1
-                st.rerun()
-            else:
-                attention_value = likert_values[st.session_state["attention_check"]]
-                if attention_value >= 2:
-                    st.error("⚠️ Attention check: Your response to the AI squirrels question suggests you may not be answering carefully. Please review your responses.")
-                    st.stop()
+            st.markdown(f"**{display_text}**")
+            current_value = st.select_slider(
+                "",
+                options=likert_options,
+                value=st.session_state[current_question["key"]] if st.session_state[current_question["key"]] in likert_options else "",
+                label_visibility="collapsed",
+                key=f"{current_question['key']}_slider"
+            )
 
-                _occ_options = [
-                    "My occupation requires minimal prior experience or training, potentially needs a high school diploma or GED, and typically involves a brief training period of a few days to a few months.",
-                    "My occupation requires a high school diploma, several months to a year of training, and often involve assisting others.",
-                    "My occupation requires vocational training, a college degree, or specialized certifications, and typically involves complex problem-solving, creativity, or advanced technical skills."
-                ]
-                occupation_fit_choice = st.session_state.get("occupation_fit_radio", _occ_options[0])
-                if occupation_fit_choice not in _occ_options:
-                    occupation_fit_choice = _occ_options[0]
-                st.session_state.page = 7
-                st.session_state.pair_index = 0
-                st.rerun()
+        st.markdown("---")
+        col_prev, col_dummy, col_next = st.columns([0.2, 0.6, 0.2])
+        with col_prev:
+            page6_prev = st.form_submit_button("← Previous")
+        with col_next:
+            next_label = "Finish →" if idx == len(page6_questions) - 1 else "Next →"
+            page6_next = st.form_submit_button(next_label)
+
+    if page6_prev:
+        if idx > 0:
+            st.session_state.page6_question_index = idx - 1
+        else:
+            st.session_state.page = 5
+        st.rerun()
+
+    if page6_next:
+        if current_question["type"] == "occupation_fit":
+            if not current_value:
+                st.error("Please select the description that best fits your occupation")
+                st.stop()
+        else:
+            st.session_state[current_question["key"]] = current_value
+            if not current_value:
+                st.error("Please select one option before continuing")
+                st.stop()
+
+        if idx < len(page6_questions) - 1:
+            st.session_state.page6_question_index = idx + 1
+            st.rerun()
+        else:
+            attention_value = likert_values[st.session_state["attention_check"]]
+            if attention_value >= 2:
+                st.error("⚠️ Attention check: Your response to the AI squirrels question suggests you may not be answering carefully. Please review your responses.")
+                st.stop()
+
+            _occ_options = [
+                "My occupation requires minimal prior experience or training, potentially needs a high school diploma or GED, and typically involves a brief training period of a few days to a few months.",
+                "My occupation requires a high school diploma, several months to a year of training, and often involve assisting others.",
+                "My occupation requires vocational training, a college degree, or specialized certifications, and typically involves complex problem-solving, creativity, or advanced technical skills."
+            ]
+            occupation_fit_choice = st.session_state.get("occupation_fit_radio", _occ_options[0])
+            if occupation_fit_choice not in _occ_options:
+                occupation_fit_choice = _occ_options[0]
+            st.session_state.page = 7
+            st.session_state.pair_index = 0
+            st.rerun()
 
 # PAGE 7: Task Pair Choices
 elif st.session_state.page == 7:
@@ -2140,68 +2148,74 @@ elif st.session_state.page == 7:
 
         st.markdown(f"<div style='text-align:center; color:#888; margin-bottom:20px;'>{st.session_state.pair_index + 1}/{total_pairs}</div>", unsafe_allow_html=True)
 
-        col_left, col_or, col_right = st.columns([0.45, 0.1, 0.45])
-        with col_left:
-            left_task = current_pair["left"]
-            left_selected = st.session_state.pair_choices.get(pair_id) == "left"
-            border_left = "3px solid #E63946" if left_selected else "2px solid #333"
-            st.markdown(f"""
-            <div style='border:{border_left}; padding:30px; border-radius:8px; min-height:160px; background:{'#fff5f5' if left_selected else 'white'};'>
-                <strong>{left_task['title']}</strong>
-                <p style='color:#555; font-size:14px; margin-top:10px;'>{left_task['description']}</p>
-            </div>
-            """, unsafe_allow_html=True)
-            if st.button("Choose this →", key=f"choose_left_{pair_id}"):
-                st.session_state.pair_choices[pair_id] = "left"
-                st.rerun()
+        left_task = current_pair["left"]
+        right_task = current_pair["right"]
+        existing_choice = st.session_state.pair_choices.get(pair_id, "")
 
-        with col_or:
-            st.markdown("""
-            <div style='display:flex; align-items:center; justify-content:center; height:160px;'>
-                <div style='background:#111; color:white; border-radius:50%; width:48px; height:48px;
-                            display:flex; align-items:center; justify-content:center;
-                            font-weight:bold; font-size:16px;'>or</div>
-            </div>
-            """, unsafe_allow_html=True)
+        with st.form(f"page7_pair_form_{pair_id}"):
+            col_left, col_or, col_right = st.columns([0.45, 0.1, 0.45])
+            with col_left:
+                left_selected = existing_choice == "left"
+                border_left = "3px solid #E63946" if left_selected else "2px solid #333"
+                st.markdown(f"""
+                <div style='border:{border_left}; padding:30px; border-radius:8px; min-height:160px; background:{'#fff5f5' if left_selected else 'white'};'>
+                    <strong>{left_task['title']}</strong>
+                    <p style='color:#555; font-size:14px; margin-top:10px;'>{left_task['description']}</p>
+                </div>
+                """, unsafe_allow_html=True)
 
-        with col_right:
-            right_task = current_pair["right"]
-            right_selected = st.session_state.pair_choices.get(pair_id) == "right"
-            border_right = "3px solid #E63946" if right_selected else "2px solid #333"
-            st.markdown(f"""
-            <div style='border:{border_right}; padding:30px; border-radius:8px; min-height:160px; background:{'#fff5f5' if right_selected else 'white'};'>
-                <strong>{right_task['title']}</strong>
-                <p style='color:#555; font-size:14px; margin-top:10px;'>{right_task['description']}</p>
-            </div>
-            """, unsafe_allow_html=True)
-            if st.button("Choose this →", key=f"choose_right_{pair_id}"):
-                st.session_state.pair_choices[pair_id] = "right"
-                st.rerun()
+            with col_or:
+                st.markdown("""
+                <div style='display:flex; align-items:center; justify-content:center; height:160px;'>
+                    <div style='background:#111; color:white; border-radius:50%; width:48px; height:48px;
+                                display:flex; align-items:center; justify-content:center;
+                                font-weight:bold; font-size:16px;'>or</div>
+                </div>
+                """, unsafe_allow_html=True)
 
-        st.markdown("---")
-        col_prev7, col_dummy7, col_next7 = st.columns([0.24, 0.52, 0.24])
-        with col_prev7:
-            if st.button("← Previous", key="page7_prev"):
-                if st.session_state.pair_index > 0:
-                    st.session_state.pair_index -= 1
-                else:
-                    st.session_state.page = 6
-                    total_q = st.session_state.get("page6_total_questions", 14)
-                    st.session_state.page6_question_index = max(total_q - 1, 0)
+            with col_right:
+                right_selected = existing_choice == "right"
+                border_right = "3px solid #E63946" if right_selected else "2px solid #333"
+                st.markdown(f"""
+                <div style='border:{border_right}; padding:30px; border-radius:8px; min-height:160px; background:{'#fff5f5' if right_selected else 'white'};'>
+                    <strong>{right_task['title']}</strong>
+                    <p style='color:#555; font-size:14px; margin-top:10px;'>{right_task['description']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+            selected_choice = st.radio(
+                "Which task would you prefer to keep doing yourself?",
+                options=["left", "right"],
+                index=["left", "right"].index(existing_choice) if existing_choice in {"left", "right"} else None,
+                format_func=lambda value: left_task["title"] if value == "left" else right_task["title"],
+                horizontal=True,
+                key=f"pair_choice_{pair_id}"
+            )
+
+            st.markdown("---")
+            col_prev7, col_dummy7, col_next7 = st.columns([0.24, 0.52, 0.24])
+            with col_prev7:
+                page7_prev = st.form_submit_button("← Previous")
+            with col_next7:
+                next7_label = "Finish →" if st.session_state.pair_index == total_pairs - 1 else "Next →"
+                page7_next = st.form_submit_button(next7_label)
+
+        if page7_prev:
+            if st.session_state.pair_index > 0:
+                st.session_state.pair_index -= 1
+            else:
+                st.session_state.page = 6
+                total_q = st.session_state.get("page6_total_questions", 14)
+                st.session_state.page6_question_index = max(total_q - 1, 0)
+            st.rerun()
+
+        if page7_next:
+            if selected_choice not in {"left", "right"}:
+                st.error("Please choose one task.")
+            else:
+                st.session_state.pair_choices[pair_id] = selected_choice
+                st.session_state.pair_index += 1
                 st.rerun()
-        with col_dummy7:
-            st.markdown("")
-        with col_next7:
-            next7_label = "Finish →" if st.session_state.pair_index == total_pairs - 1 else "Next →"
-            _next_spacer, _next_btn_col = st.columns([0.35, 0.65])
-            with _next_btn_col:
-                if st.button(next7_label, key="page7_next"):
-                    current_choice = st.session_state.pair_choices.get(pair_id)
-                    if current_choice not in {"left", "right"}:
-                        st.error("Please choose one task.")
-                    else:
-                        st.session_state.pair_index += 1
-                        st.rerun()
 
 # PAGE 8: Fears and Hopes Collection (After Survey)
 elif st.session_state.page == 8:
@@ -2213,163 +2227,167 @@ elif st.session_state.page == 8:
     </div>
     """, unsafe_allow_html=True)
 
-    left_col_after, right_col_after = st.columns(2, gap="large")
+    with st.form("page8_form"):
+        left_col_after, right_col_after = st.columns(2, gap="large")
 
-    with left_col_after:
-        st.markdown("""
-        <div style='background-color: #1a1a1a; color: white; padding: 30px; border-radius: 8px;'>
-        <h3 style='text-align: center; margin-bottom: 20px;'>I rate my fears about AI Agents as</h3>
-        </div>
-        """, unsafe_allow_html=True)
+        with left_col_after:
+            st.markdown("""
+            <div style='background-color: #1a1a1a; color: white; padding: 30px; border-radius: 8px;'>
+            <h3 style='text-align: center; margin-bottom: 20px;'>I rate my fears about AI Agents as</h3>
+            </div>
+            """, unsafe_allow_html=True)
 
-        fears_rating_after = st.slider(
-            label="Fear Level After",
-            min_value=1,
-            max_value=5,
-            value=min(max(st.session_state.fears_rating_after, 1), 5),
-            step=1,
-            label_visibility="collapsed",
-            key="fears_after_slider"
-        )
+            fears_rating_after = st.slider(
+                label="Fear Level After",
+                min_value=1,
+                max_value=5,
+                value=min(max(st.session_state.fears_rating_after, 1), 5),
+                step=1,
+                label_visibility="collapsed",
+                key="fears_after_slider"
+            )
 
-        st.markdown("""
-        <div style='display: flex; justify-content: space-between; margin-top: -25px;'>
-            <span style='font-size: 12px; color: #666;'>No fear at all</span>
-            <span style='font-size: 12px; color: #666;'>Terrified</span>
-        </div>
-        """, unsafe_allow_html=True)
+            st.markdown("""
+            <div style='display: flex; justify-content: space-between; margin-top: -25px;'>
+                <span style='font-size: 12px; color: #666;'>No fear at all</span>
+                <span style='font-size: 12px; color: #666;'>Terrified</span>
+            </div>
+            """, unsafe_allow_html=True)
 
-        st.markdown("")
-        st.markdown("**I fear AI Agents because...**")
+            st.markdown("")
+            st.markdown("**I fear AI Agents because...**")
 
-        fears_text_after = st.text_area(
-            label="Fear description after",
-            value=st.session_state.fears_text_after,
-            height=100,
-            placeholder="Write your fears here",
-            label_visibility="collapsed",
-            key="fears_after_input"
-        )
+            fears_text_after = st.text_area(
+                label="Fear description after",
+                value=st.session_state.fears_text_after,
+                height=100,
+                placeholder="Write your fears here",
+                label_visibility="collapsed",
+                key="fears_after_input"
+            )
 
-        st.markdown(f"**{len(fears_text_after)}/350 (Min. 70 characters)**")
+            st.markdown(f"**{len(fears_text_after)}/350 (Min. 70 characters)**")
 
-        st.markdown("")
-        st.markdown("**To what extent do you believe that your AI Agents fear is shared by most people?**")
+            st.markdown("")
+            st.markdown("**To what extent do you believe that your AI Agents fear is shared by most people?**")
 
-        fear_sharing_options_after = ["", "Not at all", "Rarely", "Occasionally", "Moderately", "Often", "Very often", "Almost always"]
-        fears_shared_after = st.select_slider(
-            label="Fear shared after",
-            options=fear_sharing_options_after,
-            value=st.session_state.fears_shared_after if st.session_state.fears_shared_after in fear_sharing_options_after else "",
-            label_visibility="collapsed",
-            key="fears_shared_after_input"
-        )
+            fear_sharing_options_after = ["", "Not at all", "Rarely", "Occasionally", "Moderately", "Often", "Very often", "Almost always"]
+            fears_shared_after = st.select_slider(
+                label="Fear shared after",
+                options=fear_sharing_options_after,
+                value=st.session_state.fears_shared_after if st.session_state.fears_shared_after in fear_sharing_options_after else "",
+                label_visibility="collapsed",
+                key="fears_shared_after_input"
+            )
 
-    with right_col_after:
-        st.markdown("""
-        <div style='border: 2px solid #333; padding: 30px; border-radius: 8px; background-color: white;'>
-        <h3 style='text-align: center; margin-bottom: 20px; color: black;'>I rate my hopes about AI Agents as</h3>
-        </div>
-        """, unsafe_allow_html=True)
+        with right_col_after:
+            st.markdown("""
+            <div style='border: 2px solid #333; padding: 30px; border-radius: 8px; background-color: white;'>
+            <h3 style='text-align: center; margin-bottom: 20px; color: black;'>I rate my hopes about AI Agents as</h3>
+            </div>
+            """, unsafe_allow_html=True)
 
-        hopes_rating_after = st.slider(
-            label="Hope Level After",
-            min_value=1,
-            max_value=5,
-            value=min(max(st.session_state.hopes_rating_after, 1), 5),
-            step=1,
-            label_visibility="collapsed",
-            key="hopes_after_slider"
-        )
+            hopes_rating_after = st.slider(
+                label="Hope Level After",
+                min_value=1,
+                max_value=5,
+                value=min(max(st.session_state.hopes_rating_after, 1), 5),
+                step=1,
+                label_visibility="collapsed",
+                key="hopes_after_slider"
+            )
 
-        st.markdown("""
-        <div style='display: flex; justify-content: space-between; margin-top: -25px;'>
-            <span style='font-size: 12px; color: #666;'>No hope at all</span>
-            <span style='font-size: 12px; color: #666;'>Full of hope</span>
-        </div>
-        """, unsafe_allow_html=True)
+            st.markdown("""
+            <div style='display: flex; justify-content: space-between; margin-top: -25px;'>
+                <span style='font-size: 12px; color: #666;'>No hope at all</span>
+                <span style='font-size: 12px; color: #666;'>Full of hope</span>
+            </div>
+            """, unsafe_allow_html=True)
 
-        st.markdown("")
-        st.markdown("**I have hope in AI Agents because...**")
+            st.markdown("")
+            st.markdown("**I have hope in AI Agents because...**")
 
-        hopes_text_after = st.text_area(
-            label="Hope description after",
-            value=st.session_state.hopes_text_after,
-            height=100,
-            placeholder="Write your hopes here",
-            label_visibility="collapsed",
-            key="hopes_after_input"
-        )
+            hopes_text_after = st.text_area(
+                label="Hope description after",
+                value=st.session_state.hopes_text_after,
+                height=100,
+                placeholder="Write your hopes here",
+                label_visibility="collapsed",
+                key="hopes_after_input"
+            )
 
-        st.markdown(f"**{len(hopes_text_after)}/350 (Min. 70 characters)**")
+            st.markdown(f"**{len(hopes_text_after)}/350 (Min. 70 characters)**")
 
-        st.markdown("")
-        st.markdown("**To what extent do you believe that your AI Agents hopes are shared by most people?**")
+            st.markdown("")
+            st.markdown("**To what extent do you believe that your AI Agents hopes are shared by most people?**")
 
-        hope_sharing_options_after = ["", "Not at all", "Rarely", "Occasionally", "Moderately", "Often", "Very often", "Almost always"]
-        hopes_shared_after = st.select_slider(
-            label="Hope shared after",
-            options=hope_sharing_options_after,
-            value=st.session_state.hopes_shared_after if st.session_state.hopes_shared_after in hope_sharing_options_after else "",
-            label_visibility="collapsed",
-            key="hopes_shared_after_input"
-        )
+            hope_sharing_options_after = ["", "Not at all", "Rarely", "Occasionally", "Moderately", "Often", "Very often", "Almost always"]
+            hopes_shared_after = st.select_slider(
+                label="Hope shared after",
+                options=hope_sharing_options_after,
+                value=st.session_state.hopes_shared_after if st.session_state.hopes_shared_after in hope_sharing_options_after else "",
+                label_visibility="collapsed",
+                key="hopes_shared_after_input"
+            )
 
-    st.markdown("---")
-    col_prev8, col_dummy8, col_next8 = st.columns([0.2, 0.65, 0.15])
-    with col_prev8:
-        if st.button("← Previous", key="page8_prev"):
-            _pairs_for_back = load_task_pairs()
-            _fallback_pairs_for_back = [
-                {"pair_id": -1,  "left": {"task_id": 2,  "title": "Generate lesson plans",            "description": "Generate lesson plans tailored to different student levels."},
-                                 "right": {"task_id": 1,  "title": "Process correspondence",             "description": "Process all correspondence and paperwork related to accounts."}},
-                {"pair_id": -2,  "left": {"task_id": 5,  "title": "Write emails",                       "description": "Compose and send routine emails."},
-                                 "right": {"task_id": 3,  "title": "Schedule meetings",                   "description": "Schedule and coordinate meetings across teams."}},
-                {"pair_id": -3,  "left": {"task_id": 7,  "title": "Grade assignments",                   "description": "Grade assignments and provide feedback."},
-                                 "right": {"task_id": 4,  "title": "Analyze student performance",         "description": "Analyze student performance data and generate insights."}},
-                {"pair_id": -4,  "left": {"task_id": 6,  "title": "Create content",                      "description": "Create educational content, summaries, and explanations."},
-                                 "right": {"task_id": 8,  "title": "Monitor student progress",            "description": "Monitor student progress and flag concerns."}},
-                {"pair_id": -5,  "left": {"task_id": 10, "title": "Personalized tutoring",               "description": "Provide personalized tutoring and one-on-one support."},
-                                 "right": {"task_id": 9,  "title": "Content moderation",                  "description": "Moderate user-generated content and discussions."}},
-                {"pair_id": -6,  "left": {"task_id": 11, "title": "Data entry",                          "description": "Enter data into systems and databases."},
-                                 "right": {"task_id": 12, "title": "Curriculum design",                   "description": "Design and develop new curricula."}},
-            ]
-            _all_pairs_for_back = _pairs_for_back if _pairs_for_back else _fallback_pairs_for_back
-            st.session_state.pair_index = max(len(_all_pairs_for_back) - 1, 0)
-            st.session_state.page = 7
-            st.rerun()
-    with col_next8:
-        if st.button("Next →", key="page8_next"):
-            if len(fears_text_after.strip()) < 70:
-                st.error("Fears: Please enter at least 70 characters")
-            elif len(fears_text_after) > 350:
-                st.error("Fears: Your response exceeds 350 characters")
-            elif len(hopes_text_after.strip()) < 70:
-                st.error("Hopes: Please enter at least 70 characters")
-            elif len(hopes_text_after) > 350:
-                st.error("Hopes: Your response exceeds 350 characters")
-            elif not fears_shared_after:
-                st.error("Fears: Please select how widely your fear is shared")
-            elif not hopes_shared_after:
-                st.error("Hopes: Please select how widely your hope is shared")
-            else:
-                st.session_state.fears_rating_after = fears_rating_after
-                st.session_state.hopes_rating_after = hopes_rating_after
-                st.session_state.fears_text_after = fears_text_after
-                st.session_state.hopes_text_after = hopes_text_after
-                st.session_state.fears_shared_after = fears_shared_after
-                st.session_state.hopes_shared_after = hopes_shared_after
+        st.markdown("---")
+        col_prev8, col_dummy8, col_next8 = st.columns([0.2, 0.65, 0.15])
+        with col_prev8:
+            page8_prev = st.form_submit_button("← Previous")
+        with col_next8:
+            page8_next = st.form_submit_button("Next →")
 
-                try:
-                    finalize_submission_to_db()
-                    st.session_state.final_submit_done = True
-                    st.session_state.final_submit_error = ""
-                    st.session_state.page = 9
-                    st.rerun()
-                except Exception as exc:
-                    st.session_state.final_submit_done = False
-                    st.session_state.final_submit_error = str(exc).splitlines()[0]
-                    st.error(f"Final submission failed: {st.session_state.final_submit_error}")
+    if page8_prev:
+        _pairs_for_back = load_task_pairs()
+        _fallback_pairs_for_back = [
+            {"pair_id": -1,  "left": {"task_id": 2,  "title": "Generate lesson plans",            "description": "Generate lesson plans tailored to different student levels."},
+                             "right": {"task_id": 1,  "title": "Process correspondence",             "description": "Process all correspondence and paperwork related to accounts."}},
+            {"pair_id": -2,  "left": {"task_id": 5,  "title": "Write emails",                       "description": "Compose and send routine emails."},
+                             "right": {"task_id": 3,  "title": "Schedule meetings",                   "description": "Schedule and coordinate meetings across teams."}},
+            {"pair_id": -3,  "left": {"task_id": 7,  "title": "Grade assignments",                   "description": "Grade assignments and provide feedback."},
+                             "right": {"task_id": 4,  "title": "Analyze student performance",         "description": "Analyze student performance data and generate insights."}},
+            {"pair_id": -4,  "left": {"task_id": 6,  "title": "Create content",                      "description": "Create educational content, summaries, and explanations."},
+                             "right": {"task_id": 8,  "title": "Monitor student progress",            "description": "Monitor student progress and flag concerns."}},
+            {"pair_id": -5,  "left": {"task_id": 10, "title": "Personalized tutoring",               "description": "Provide personalized tutoring and one-on-one support."},
+                             "right": {"task_id": 9,  "title": "Content moderation",                  "description": "Moderate user-generated content and discussions."}},
+            {"pair_id": -6,  "left": {"task_id": 11, "title": "Data entry",                          "description": "Enter data into systems and databases."},
+                             "right": {"task_id": 12, "title": "Curriculum design",                   "description": "Design and develop new curricula."}},
+        ]
+        _all_pairs_for_back = _pairs_for_back if _pairs_for_back else _fallback_pairs_for_back
+        st.session_state.pair_index = max(len(_all_pairs_for_back) - 1, 0)
+        st.session_state.page = 7
+        st.rerun()
+    if page8_next:
+        if len(fears_text_after.strip()) < 70:
+            st.error("Fears: Please enter at least 70 characters")
+        elif len(fears_text_after) > 350:
+            st.error("Fears: Your response exceeds 350 characters")
+        elif len(hopes_text_after.strip()) < 70:
+            st.error("Hopes: Please enter at least 70 characters")
+        elif len(hopes_text_after) > 350:
+            st.error("Hopes: Your response exceeds 350 characters")
+        elif not fears_shared_after:
+            st.error("Fears: Please select how widely your fear is shared")
+        elif not hopes_shared_after:
+            st.error("Hopes: Please select how widely your hope is shared")
+        else:
+            st.session_state.fears_rating_after = fears_rating_after
+            st.session_state.hopes_rating_after = hopes_rating_after
+            st.session_state.fears_text_after = fears_text_after
+            st.session_state.hopes_text_after = hopes_text_after
+            st.session_state.fears_shared_after = fears_shared_after
+            st.session_state.hopes_shared_after = hopes_shared_after
+
+            try:
+                finalize_submission_to_db()
+                st.session_state.final_submit_done = True
+                st.session_state.final_submit_error = ""
+                st.session_state.page = 9
+                st.rerun()
+            except Exception as exc:
+                st.session_state.final_submit_done = False
+                st.session_state.final_submit_error = str(exc).splitlines()[0]
+                st.error(f"Final submission failed: {st.session_state.final_submit_error}")
 
 # PAGE 9: Completion message
 elif st.session_state.page == 9:
