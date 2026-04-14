@@ -1,21 +1,10 @@
 import streamlit as st
 
-from survey_app.shared import SHARED_FREQUENCY_OPTIONS, bootstrap_page, go_to_page, render_view_anchor
+from survey_app.shared import FEAR_RATING_OPTIONS, HOPE_RATING_OPTIONS, SHARED_FREQUENCY_OPTIONS, bootstrap_page, go_to_page, option_to_rating, rating_to_option, render_view_anchor
 
 
 anchor_id = bootstrap_page(3)
 render_view_anchor(anchor_id)
-
-st.markdown(
-    """
-    <style>
-        [data-testid="stSlider"] [data-testid="stThumbValue"] {
-            display: none;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
 
 st.markdown(
     """
@@ -39,15 +28,12 @@ with st.form("page3_form"):
             """,
             unsafe_allow_html=True,
         )
-        fears_rating = st.slider("Fear Level", 1, 5, value=min(max(st.session_state.fears_rating, 1), 5), label_visibility="collapsed", key="fears_slider")
-        st.markdown(
-            """
-            <div style='display: flex; justify-content: space-between; margin-top: -25px;'>
-                <span style='font-size: 12px; color: #666;'>No fear at all</span>
-                <span style='font-size: 12px; color: #666;'>Terrified</span>
-            </div>
-            """,
-            unsafe_allow_html=True,
+        fears_rating = st.select_slider(
+            "Fear Level",
+            options=FEAR_RATING_OPTIONS,
+            value=rating_to_option(st.session_state.fears_rating, FEAR_RATING_OPTIONS),
+            label_visibility="collapsed",
+            key="fears_slider",
         )
         st.markdown("**I fear AI Agents because...**")
         fears_text = st.text_area("Fear description", value=st.session_state.fears_text, height=100, placeholder="Write your fears here", label_visibility="collapsed", key="fears_input")
@@ -70,15 +56,12 @@ with st.form("page3_form"):
             """,
             unsafe_allow_html=True,
         )
-        hopes_rating = st.slider("Hope Level", 1, 5, value=min(max(st.session_state.hopes_rating, 1), 5), label_visibility="collapsed", key="hopes_slider")
-        st.markdown(
-            """
-            <div style='display: flex; justify-content: space-between; margin-top: -25px;'>
-                <span style='font-size: 12px; color: #666;'>No hope at all</span>
-                <span style='font-size: 12px; color: #666;'>Full of hope</span>
-            </div>
-            """,
-            unsafe_allow_html=True,
+        hopes_rating = st.select_slider(
+            "Hope Level",
+            options=HOPE_RATING_OPTIONS,
+            value=rating_to_option(st.session_state.hopes_rating, HOPE_RATING_OPTIONS),
+            label_visibility="collapsed",
+            key="hopes_slider",
         )
         st.markdown("**I have hope in AI Agents because...**")
         hopes_text = st.text_area("Hope description", value=st.session_state.hopes_text, height=100, placeholder="Write your hopes here", label_visibility="collapsed", key="hopes_input")
@@ -115,8 +98,8 @@ if page3_next:
     elif not hopes_shared:
         st.error("Hopes: Please select how widely your hope is shared")
     else:
-        st.session_state.fears_rating = fears_rating
-        st.session_state.hopes_rating = hopes_rating
+        st.session_state.fears_rating = option_to_rating(fears_rating, FEAR_RATING_OPTIONS)
+        st.session_state.hopes_rating = option_to_rating(hopes_rating, HOPE_RATING_OPTIONS)
         st.session_state.fears_text = fears_text
         st.session_state.hopes_text = hopes_text
         st.session_state.fears_shared = fears_shared

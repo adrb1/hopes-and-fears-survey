@@ -1,21 +1,10 @@
 import streamlit as st
 
-from survey_app.shared import SHARED_FREQUENCY_OPTIONS, bootstrap_page, finalize_submission_to_db, get_task_pairs_for_ui, go_to_page, render_view_anchor
+from survey_app.shared import FEAR_RATING_OPTIONS, HOPE_RATING_OPTIONS, SHARED_FREQUENCY_OPTIONS, bootstrap_page, finalize_submission_to_db, get_task_pairs_for_ui, go_to_page, option_to_rating, rating_to_option, render_view_anchor
 
 
 anchor_id = bootstrap_page(8)
 render_view_anchor(anchor_id)
-
-st.markdown(
-    """
-    <style>
-        [data-testid="stSlider"] [data-testid="stThumbValue"] {
-            display: none;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
 
 st.markdown(
     """
@@ -36,13 +25,13 @@ with st.form("page8_form"):
         <h3 style='text-align: center; margin-bottom: 20px;'>I rate my fears about AI Agents as</h3>
         </div>
         """, unsafe_allow_html=True)
-        fears_rating_after = st.slider("Fear Level After", 1, 5, value=min(max(st.session_state.fears_rating_after, 1), 5), label_visibility="collapsed", key="fears_after_slider")
-        st.markdown("""
-        <div style='display: flex; justify-content: space-between; margin-top: -25px;'>
-            <span style='font-size: 12px; color: #666;'>No fear at all</span>
-            <span style='font-size: 12px; color: #666;'>Terrified</span>
-        </div>
-        """, unsafe_allow_html=True)
+        fears_rating_after = st.select_slider(
+            "Fear Level After",
+            options=FEAR_RATING_OPTIONS,
+            value=rating_to_option(st.session_state.fears_rating_after, FEAR_RATING_OPTIONS),
+            label_visibility="collapsed",
+            key="fears_after_slider",
+        )
         st.markdown("**I fear AI Agents because...**")
         fears_text_after = st.text_area("Fear description after", value=st.session_state.fears_text_after, height=100, placeholder="Write your fears here", label_visibility="collapsed", key="fears_after_input")
         st.markdown(f"**{len(fears_text_after)}/350 (Min. 70 characters)**")
@@ -55,13 +44,13 @@ with st.form("page8_form"):
         <h3 style='text-align: center; margin-bottom: 20px; color: black;'>I rate my hopes about AI Agents as</h3>
         </div>
         """, unsafe_allow_html=True)
-        hopes_rating_after = st.slider("Hope Level After", 1, 5, value=min(max(st.session_state.hopes_rating_after, 1), 5), label_visibility="collapsed", key="hopes_after_slider")
-        st.markdown("""
-        <div style='display: flex; justify-content: space-between; margin-top: -25px;'>
-            <span style='font-size: 12px; color: #666;'>No hope at all</span>
-            <span style='font-size: 12px; color: #666;'>Full of hope</span>
-        </div>
-        """, unsafe_allow_html=True)
+        hopes_rating_after = st.select_slider(
+            "Hope Level After",
+            options=HOPE_RATING_OPTIONS,
+            value=rating_to_option(st.session_state.hopes_rating_after, HOPE_RATING_OPTIONS),
+            label_visibility="collapsed",
+            key="hopes_after_slider",
+        )
         st.markdown("**I have hope in AI Agents because...**")
         hopes_text_after = st.text_area("Hope description after", value=st.session_state.hopes_text_after, height=100, placeholder="Write your hopes here", label_visibility="collapsed", key="hopes_after_input")
         st.markdown(f"**{len(hopes_text_after)}/350 (Min. 70 characters)**")
@@ -93,8 +82,8 @@ if page8_next:
     elif not hopes_shared_after:
         st.error("Hopes: Please select how widely your hope is shared")
     else:
-        st.session_state.fears_rating_after = fears_rating_after
-        st.session_state.hopes_rating_after = hopes_rating_after
+        st.session_state.fears_rating_after = option_to_rating(fears_rating_after, FEAR_RATING_OPTIONS)
+        st.session_state.hopes_rating_after = option_to_rating(hopes_rating_after, HOPE_RATING_OPTIONS)
         st.session_state.fears_text_after = fears_text_after
         st.session_state.hopes_text_after = hopes_text_after
         st.session_state.fears_shared_after = fears_shared_after

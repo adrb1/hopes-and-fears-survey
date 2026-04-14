@@ -58,6 +58,22 @@ SHARED_FREQUENCY_OPTIONS = [
     "Almost always",
 ]
 
+FEAR_RATING_OPTIONS = [
+    "No fear at all",
+    "Slight fear",
+    "Moderate fear",
+    "High fear",
+    "Terrified",
+]
+
+HOPE_RATING_OPTIONS = [
+    "No hope at all",
+    "Slight hope",
+    "Moderate hope",
+    "High hope",
+    "Full of hope",
+]
+
 LIKERT_SCALE_OPTIONS = [
     "Strongly Disagree",
     "Disagree",
@@ -83,6 +99,15 @@ PAGE6_LIKERT_KEYS = [
     "privacy",
     "ai_abuse",
 ]
+
+
+def rating_to_option(value, options):
+    clamped_value = min(max(int(value or 1), 1), len(options))
+    return options[clamped_value - 1]
+
+
+def option_to_rating(value, options):
+    return options.index(value) + 1
 
 AGE_GROUP_OPTIONS = [
     "18-24 years old",
