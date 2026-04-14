@@ -24,7 +24,7 @@ from sqlalchemy.orm import relationship, sessionmaker
 
 
 PAGE_PATHS = {
-    0: "app.py",
+    0: "pages/00_Consent.py",
     1: "pages/01_Identity.py",
     2: "pages/02_AI_Definition.py",
     3: "pages/03_Fears_Hopes_Before.py",
