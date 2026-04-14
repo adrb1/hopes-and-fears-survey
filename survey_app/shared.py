@@ -119,9 +119,9 @@ AGE_GROUP_OPTIONS = [
 ]
 
 OCCUPATION_FIT_OPTIONS = [
-    "My occupation requires minimal prior experience or training, potentially needs a high school diploma or GED, and typically involves a brief training period of a few days to a few months.",
-    "My occupation requires a high school diploma, several months to a year of training, and often involve assisting others.",
-    "My occupation requires vocational training, a college degree, or specialized certifications, and typically involves complex problem-solving, creativity, or advanced technical skills.",
+    "minimal prior experience or training, potentially needs a high school diploma or GED, and typically involves a brief training period of a few days to a few months.",
+    "high school diploma, several months to a year of training, and often involve assisting others.",
+    "vocational training, a college degree, or specialized certifications, and typically involves complex problem-solving, creativity, or advanced technical skills.",
 ]
 
 AI_AGENT_DEFINITION = """AI Agents are systems that can plan, act, and collaborate with humans to complete digital tasks autonomously. They can analyse information, generate content, make recommendations, and communicate in natural language, often adapting their actions based on feedback or changing goals.
@@ -321,6 +321,7 @@ SESSION_DEFAULTS = {
     "education_other": "",
     "profile_data": {},
     "occupation_fit_radio": "",
+    "occupation_fit_choice": "",
     "smart_devices": "Neutral",
     "ai_help": "Neutral",
     "ai_tech_id": "Neutral",
@@ -1087,6 +1088,17 @@ def get_profile_submission_data():
     return normalized_profile
 
 
+def get_occupation_fit_submission_data():
+    stored_choice = (st.session_state.get("occupation_fit_choice") or "").strip()
+    widget_choice = (st.session_state.get("occupation_fit_radio") or "").strip()
+    final_choice = stored_choice or widget_choice
+
+    if final_choice not in OCCUPATION_FIT_OPTIONS:
+        return None
+
+    return final_choice
+
+
 def _sharing_index(value):
     return SHARED_FREQUENCY_OPTIONS[1:].index(value) + 1
 
@@ -1388,9 +1400,9 @@ def finalize_submission_to_db():
     ]):
         raise ValueError("Missing required demographics fields")
 
-    occupation_fit_choice = st.session_state.get("occupation_fit_radio", OCCUPATION_FIT_OPTIONS[0])
-    if occupation_fit_choice not in OCCUPATION_FIT_OPTIONS:
-        occupation_fit_choice = OCCUPATION_FIT_OPTIONS[0]
+    occupation_fit_choice = get_occupation_fit_submission_data()
+    if occupation_fit_choice is None:
+        raise ValueError("Missing required occupation description field")
 
     likert_values = {opt: i + 1 for i, opt in enumerate(LIKERT_SCALE_OPTIONS)}
 

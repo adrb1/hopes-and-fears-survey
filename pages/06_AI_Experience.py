@@ -40,7 +40,7 @@ questions = [
 with st.form("page6_form"):
     st.markdown("**Which description best fits your occupation?**")
     occupation_fit_value = st.selectbox(
-        "Select the best fit:",
+        "My occupation requires...",
         [""] + OCCUPATION_FIT_OPTIONS,
         index=([""] + OCCUPATION_FIT_OPTIONS).index(st.session_state.get("occupation_fit_radio", "")) if st.session_state.get("occupation_fit_radio", "") in [""] + OCCUPATION_FIT_OPTIONS else 0,
         format_func=lambda value: "Please select" if value == "" else value,
@@ -83,6 +83,8 @@ if page6_next:
 
     for question_key, selected_value in question_values.items():
         st.session_state[question_key] = selected_value
+
+    st.session_state.occupation_fit_choice = occupation_fit_value
 
     if likert_values[question_values["attention_check"]] >= 3:
         st.error("⚠️ Attention check: Your response to the AI Agent squirrels question suggests you may not be answering carefully. Please review your responses.")
