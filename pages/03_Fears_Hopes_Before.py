@@ -27,6 +27,7 @@ with left_col:
         """,
         unsafe_allow_html=True,
     )
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
     fears_rating = st.select_slider(
         "Fear Level",
         options=FEAR_RATING_OPTIONS,
@@ -55,6 +56,7 @@ with right_col:
         """,
         unsafe_allow_html=True,
     )
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
     hopes_rating = st.select_slider(
         "Hope Level",
         options=HOPE_RATING_OPTIONS,

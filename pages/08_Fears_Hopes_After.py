@@ -24,6 +24,7 @@ with left_col:
     <h3 style='text-align: center; margin-bottom: 20px;'>I rate my fears about AI Agents as</h3>
     </div>
     """, unsafe_allow_html=True)
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
     fears_rating_after = st.select_slider(
         "Fear Level After",
         options=FEAR_RATING_OPTIONS,
@@ -43,6 +44,7 @@ with right_col:
     <h3 style='text-align: center; margin-bottom: 20px; color: black;'>I rate my hopes about AI Agents as</h3>
     </div>
     """, unsafe_allow_html=True)
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
     hopes_rating_after = st.select_slider(
         "Hope Level After",
         options=HOPE_RATING_OPTIONS,
