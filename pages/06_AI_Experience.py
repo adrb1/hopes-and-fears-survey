@@ -16,70 +16,77 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+st.session_state.page6_question_index = 0
+
 likert_options = [""] + LIKERT_SCALE_OPTIONS
 likert_values = {opt: i for i, opt in enumerate(LIKERT_SCALE_OPTIONS)}
-page6_questions = [
-    {"type": "occupation_fit", "text": "Which description best fits your occupation?", "key": "occupation_fit_radio", "options": [""] + OCCUPATION_FIT_OPTIONS},
-    {"type": "likert", "text": "I can distinguish between smart devices and non-smart devices", "key": "smart_devices"},
-    {"type": "likert", "text": "I do not know how AI Agent technology can help me", "key": "ai_help"},
-    {"type": "likert", "text": "I can identify the AI Agent technology employed in the applications and products I use", "key": "ai_tech_id"},
-    {"type": "likert", "text": "I can skillfully use AI Agent applications or products to help me with my daily work", "key": "ai_skillful"},
-    {"type": "likert", "text": "It is usually hard for me to learn to use a new AI Agent application or product", "key": "ai_learning"},
-    {"type": "likert", "text": "I can use AI Agent applications or products to improve my work efficiency", "key": "ai_efficiency"},
-    {"type": "likert", "text": "I can evaluate the capabilities and limitations of an AI Agent application or product after using it for a while", "key": "ai_eval"},
-    {"type": "likert", "text": "I can choose a proper solution from various solutions provided by a smart agent", "key": "ai_solution"},
-    {"type": "likert", "text": "I believe AI Agent technologies are mainly developed by little squirrels", "key": "attention_check"},
-    {"type": "likert", "text": "I can choose the most appropriate AI Agent application or product from a variety for a particular task", "key": "ai_choice"},
-    {"type": "likert", "text": "I always comply with ethical principles when using AI Agent applications or products", "key": "ethical"},
-    {"type": "likert", "text": "I am never alert to privacy and information security issues when using AI Agent applications or products", "key": "privacy"},
-    {"type": "likert", "text": "I am always alert to the abuse of AI Agent technology", "key": "ai_abuse"},
+
+questions = [
+    ("I can distinguish between smart devices and non-smart devices", "smart_devices"),
+    ("I do not know how AI Agent technology can help me", "ai_help"),
+    ("I can identify the AI Agent technology employed in the applications and products I use", "ai_tech_id"),
+    ("I can skillfully use AI Agent applications or products to help me with my daily work", "ai_skillful"),
+    ("It is usually hard for me to learn to use a new AI Agent application or product", "ai_learning"),
+    ("I can use AI Agent applications or products to improve my work efficiency", "ai_efficiency"),
+    ("I can evaluate the capabilities and limitations of an AI Agent application or product after using it for a while", "ai_eval"),
+    ("I can choose a proper solution from various solutions provided by a smart agent", "ai_solution"),
+    ("I believe AI Agent technologies are mainly developed by little squirrels", "attention_check"),
+    ("I can choose the most appropriate AI Agent application or product from a variety for a particular task", "ai_choice"),
+    ("I always comply with ethical principles when using AI Agent applications or products", "ethical"),
+    ("I am never alert to privacy and information security issues when using AI Agent applications or products", "privacy"),
+    ("I am always alert to the abuse of AI Agent technology", "ai_abuse"),
 ]
 
-st.session_state.page6_total_questions = len(page6_questions)
-idx = st.session_state.page6_question_index
-current_question = page6_questions[idx]
-
 with st.form("page6_form"):
-    st.markdown(f"**Question {idx + 1}/{len(page6_questions)}**")
-    current_value = None
-    if current_question["type"] == "occupation_fit":
-        st.markdown(f"**{current_question['text']}**")
-        current_value = st.selectbox("Select the best fit:", current_question["options"], index=current_question["options"].index(st.session_state.get("occupation_fit_radio", "")) if st.session_state.get("occupation_fit_radio", "") in current_question["options"] else 0, format_func=lambda value: "Please select" if value == "" else value, key="occupation_fit_radio")
-    else:
-        display_text = current_question["text"]
-        if current_question["key"] == "attention_check":
+    st.markdown("**Which description best fits your occupation?**")
+    occupation_fit_value = st.selectbox(
+        "Select the best fit:",
+        [""] + OCCUPATION_FIT_OPTIONS,
+        index=([""] + OCCUPATION_FIT_OPTIONS).index(st.session_state.get("occupation_fit_radio", "")) if st.session_state.get("occupation_fit_radio", "") in [""] + OCCUPATION_FIT_OPTIONS else 0,
+        format_func=lambda value: "Please select" if value == "" else value,
+        key="occupation_fit_radio",
+    )
+
+    question_values = {}
+    for question_text, question_key in questions:
+        display_text = question_text
+        if question_key == "attention_check":
             display_text = "⚠️ " + display_text
         st.markdown(f"**{display_text}**")
-        current_value = st.select_slider("", options=likert_options, value=st.session_state[current_question["key"]] if st.session_state[current_question["key"]] in likert_options else "", label_visibility="collapsed", key=f"{current_question['key']}_slider")
+        question_values[question_key] = st.select_slider(
+            question_key,
+            options=likert_options,
+            value=st.session_state[question_key] if st.session_state[question_key] in likert_options else "",
+            label_visibility="collapsed",
+            key=f"{question_key}_slider",
+        )
 
     st.markdown("---")
-    col_prev, _, col_next = st.columns([0.2, 0.6, 0.2])
+    col_prev, _, col_next = st.columns([0.2, 0.65, 0.15])
     with col_prev:
         page6_prev = st.form_submit_button("← Previous")
     with col_next:
-        page6_next = st.form_submit_button("Finish →" if idx == len(page6_questions) - 1 else "Next →")
+        page6_next = st.form_submit_button("Next →")
 
 if page6_prev:
-    if idx > 0:
-        st.session_state.page6_question_index = idx - 1
-        st.rerun()
     go_to_page(5)
 
 if page6_next:
-    if current_question["type"] == "occupation_fit":
-        if not current_value:
-            st.error("Please select the description that best fits your occupation")
-            st.stop()
-    else:
-        st.session_state[current_question["key"]] = current_value
-        if not current_value:
-            st.error("Please select one option before continuing")
-            st.stop()
-    if idx < len(page6_questions) - 1:
-        st.session_state.page6_question_index = idx + 1
-        st.rerun()
-    if likert_values[st.session_state["attention_check"]] >= 2:
+    if not occupation_fit_value:
+        st.error("Please select the description that best fits your occupation")
+        st.stop()
+
+    missing_answer = next((question_text for question_text, question_key in questions if not question_values[question_key]), None)
+    if missing_answer:
+        st.error(f"Please answer: {missing_answer}")
+        st.stop()
+
+    for question_key, selected_value in question_values.items():
+        st.session_state[question_key] = selected_value
+
+    if likert_values[question_values["attention_check"]] >= 2:
         st.error("⚠️ Attention check: Your response to the AI Agent squirrels question suggests you may not be answering carefully. Please review your responses.")
         st.stop()
+
     st.session_state.pair_index = 0
     go_to_page(7)

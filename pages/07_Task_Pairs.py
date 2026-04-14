@@ -65,13 +65,12 @@ with st.form(f"page7_pair_form_{pair_id}"):
     with col_prev:
         page7_prev = st.form_submit_button("← Previous")
     with col_next:
-        page7_next = st.form_submit_button("Finish →" if st.session_state.pair_index == total_pairs - 1 else "Next →")
+        page7_next = st.form_submit_button("Next →" if st.session_state.pair_index < total_pairs - 1 else "Finish →")
 
 if page7_prev:
     if st.session_state.pair_index > 0:
         st.session_state.pair_index -= 1
         st.rerun()
-    st.session_state.page6_question_index = max(st.session_state.get("page6_total_questions", 14) - 1, 0)
     go_to_page(6)
 
 if page7_next:

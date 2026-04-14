@@ -62,7 +62,7 @@ with st.form("page8_form"):
     with col_prev:
         page8_prev = st.form_submit_button("← Previous")
     with col_next:
-        page8_next = st.form_submit_button("Next →")
+        page8_next = st.form_submit_button("Finish →")
 
 if page8_prev:
     st.session_state.pair_index = max(len(get_task_pairs_for_ui()) - 1, 0)

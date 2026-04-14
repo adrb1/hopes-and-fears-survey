@@ -238,21 +238,6 @@ MOCK_PAIRS = [
         "left": {"task_id": 7, "title": "Grade assignments", "description": "Grade assignments and provide feedback."},
         "right": {"task_id": 4, "title": "Analyze student performance", "description": "Analyze student performance data and generate insights."},
     },
-    {
-        "pair_id": -4,
-        "left": {"task_id": 6, "title": "Create content", "description": "Create educational content, summaries, and explanations."},
-        "right": {"task_id": 8, "title": "Monitor student progress", "description": "Monitor student progress and flag concerns."},
-    },
-    {
-        "pair_id": -5,
-        "left": {"task_id": 10, "title": "Personalized tutoring", "description": "Provide personalized tutoring and one-on-one support."},
-        "right": {"task_id": 9, "title": "Content moderation", "description": "Moderate user-generated content and discussions."},
-    },
-    {
-        "pair_id": -6,
-        "left": {"task_id": 11, "title": "Data entry", "description": "Enter data into systems and databases."},
-        "right": {"task_id": 12, "title": "Curriculum design", "description": "Design and develop new curricula."},
-    },
 ]
 
 SESSION_DEFAULTS = {
