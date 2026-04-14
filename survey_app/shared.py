@@ -1100,7 +1100,7 @@ def get_occupation_fit_submission_data():
 
 
 def _sharing_index(value):
-    return SHARED_FREQUENCY_OPTIONS[1:].index(value) + 1
+    return SHARED_FREQUENCY_OPTIONS.index(value) + 1
 
 
 def save_attitude(db, participant_id, ai_description, fears_rating, fears_text, fears_shared, hopes_rating, hopes_text, hopes_shared):
