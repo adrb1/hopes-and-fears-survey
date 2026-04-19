@@ -285,6 +285,7 @@ SESSION_DEFAULTS = {
     "participant_id": None,
     "prolific_id": "",
     "job_role": "",
+    "selected_occupation_id": None,
     "job_role_other": "",
     "ai_description": "",
     "fears_rating": 3,
@@ -1028,19 +1029,73 @@ def get_or_create_occupation(db, occupation_name):
     return occ
 
 
-def get_or_create_participant(db, prolific_id, occupation_name, commit=True):
+def get_occupation_id_for_name(occupation_name):
+    normalized_name = (occupation_name or "").strip()
+    if not normalized_name:
+        return None
+
+    db = SessionLocal()
+    try:
+        return db.query(Occupation.occupation_id).filter(Occupation.occupation_name == normalized_name).scalar()
+    finally:
+        db.close()
+
+
+def get_or_create_participant(db, prolific_id, occupation_name=None, occupation_id=None, commit=True):
     participant = db.query(Participant).filter(Participant.prolific_id == prolific_id).first()
-    occ = get_or_create_occupation(db, occupation_name)
+    resolved_occupation_id = occupation_id
+    if resolved_occupation_id is None:
+        occ = get_or_create_occupation(db, occupation_name)
+        resolved_occupation_id = occ.occupation_id
+
     if not participant:
-        participant = Participant(prolific_id=prolific_id, occupation_id=occ.occupation_id, entry_date=datetime.utcnow())
+        participant = Participant(prolific_id=prolific_id, occupation_id=resolved_occupation_id, entry_date=datetime.utcnow())
         db.add(participant)
         db.flush()
     else:
-        participant.occupation_id = occ.occupation_id
+        participant.occupation_id = resolved_occupation_id
 
     if commit:
         db.commit()
     return participant.participant_id
+
+
+def get_ai_agent_definition_for_occupation_id(occupation_id):
+    if not occupation_id:
+        return AI_AGENT_DEFINITION
+
+    db = SessionLocal()
+    try:
+        definition_text = (
+            db.query(Occupation.definition_text)
+            .filter(Occupation.occupation_id == occupation_id)
+            .scalar()
+        )
+    finally:
+        db.close()
+
+    normalized_definition = (definition_text or "").strip()
+    return normalized_definition or AI_AGENT_DEFINITION
+
+
+def resolve_participant_id_for_submission(db, prolific_id, occupation_name, occupation_id=None):
+    session_participant_id = st.session_state.get("participant_id")
+    if session_participant_id:
+        existing_participant = db.query(Participant).filter(Participant.participant_id == session_participant_id).first()
+        if existing_participant and existing_participant.prolific_id == prolific_id:
+            if occupation_id is not None:
+                existing_participant.occupation_id = occupation_id
+            return existing_participant.participant_id
+
+    participant_id = get_or_create_participant(
+        db,
+        prolific_id,
+        occupation_name=occupation_name,
+        occupation_id=occupation_id,
+        commit=False,
+    )
+    st.session_state.participant_id = participant_id
+    return participant_id
 
 
 def save_profile(db, participant_id, commit=True, **kwargs):
@@ -1518,11 +1573,11 @@ def finalize_submission_to_db():
 
     db = SessionLocal()
     try:
-        participant_id = get_or_create_participant(
+        participant_id = resolve_participant_id_for_submission(
             db,
             submission_data["prolific_id"],
             submission_data["job_role"],
-            commit=False,
+            occupation_id=st.session_state.get("selected_occupation_id"),
         )
         st.session_state.participant_id = participant_id
 

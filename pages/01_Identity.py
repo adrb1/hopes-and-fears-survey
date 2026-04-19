@@ -1,6 +1,6 @@
 import streamlit as st
 
-from survey_app.shared import bootstrap_page, get_job_roles_for_ui, go_to_page, render_view_anchor
+from survey_app.shared import bootstrap_page, get_job_roles_for_ui, get_occupation_id_for_name, go_to_page, render_view_anchor
 
 
 anchor_id = bootstrap_page(1)
@@ -64,6 +64,7 @@ if page1_next:
         st.session_state.prolific_id = prolific_id
         st.session_state.job_role = job_role
         st.session_state.participant_id = None
+        st.session_state.selected_occupation_id = get_occupation_id_for_name(job_role)
         st.session_state.profile_data = {}
         st.session_state.before_attitude_data = {}
         st.session_state.after_attitude_data = {}

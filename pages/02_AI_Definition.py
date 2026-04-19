@@ -1,10 +1,12 @@
 import streamlit as st
 
-from survey_app.shared import AI_AGENT_DEFINITION, bootstrap_page, go_to_page, render_view_anchor
+from survey_app.shared import bootstrap_page, get_ai_agent_definition_for_occupation_id, go_to_page, render_view_anchor
 
 
 anchor_id = bootstrap_page(2)
 render_view_anchor(anchor_id)
+
+ai_agent_definition = get_ai_agent_definition_for_occupation_id(st.session_state.selected_occupation_id)
 
 st.markdown(
     """
@@ -18,7 +20,7 @@ st.markdown(
 st.info("⚠️ UPDATE: Agent definition to be displayed here")
 st.markdown("---")
 st.markdown("**[AI Agent Definition]**")
-st.markdown(AI_AGENT_DEFINITION)
+st.markdown(ai_agent_definition)
 st.markdown("---")
 st.markdown("**How would you describe AI Agents to a friend?**")
 
