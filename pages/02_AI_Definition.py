@@ -17,7 +17,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.info("⚠️ UPDATE: Agent definition to be displayed here")
 st.markdown("---")
 st.markdown("**[AI Agent Definition]**")
 st.markdown(ai_agent_definition)
