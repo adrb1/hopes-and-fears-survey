@@ -209,6 +209,7 @@ def render_task_cell(task):
     if st.button(label="📖 View Details", key=f"task_{task['id']}", use_container_width=True):
         st.session_state.selected_task = task["id"]
         st.session_state.detail_open_token += 1
+        st.session_state.viewed_task_ids.add(task["id"])
         queue_task_event(task["id"], "view")
         st.rerun()
 
@@ -221,10 +222,16 @@ for col_i in range(n_cols):
                 render_task_cell(task)
 
 st.markdown("---")
+MIN_VIEWS = 5
+viewed_count = len(st.session_state.viewed_task_ids)
 col_prev, _, col_next = st.columns([0.2, 0.65, 0.15])
 with col_prev:
     if st.button("← Previous", key="page4_prev"):
         go_to_page(3)
 with col_next:
-    if st.button("Next →", key="page4_next"):
-        go_to_page(5)
+    if viewed_count < MIN_VIEWS:
+        st.button("Next →", key="page4_next", disabled=True)
+        st.caption(f"Please view at least {MIN_VIEWS} task details to continue ({viewed_count}/{MIN_VIEWS} viewed).")
+    else:
+        if st.button("Next →", key="page4_next"):
+            go_to_page(5)

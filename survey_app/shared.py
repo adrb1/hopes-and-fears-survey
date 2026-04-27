@@ -323,6 +323,7 @@ SESSION_DEFAULTS = {
     "profile_data": {},
     "before_attitude_data": {},
     "after_attitude_data": {},
+    "viewed_task_ids": set(),
     "occupation_fit_radio": "",
     "occupation_fit_choice": "",
     "smart_devices": "Neutral",
