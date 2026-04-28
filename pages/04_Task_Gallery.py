@@ -64,7 +64,7 @@ if st.session_state.selected_task is not None:
 
     task = next((item for item in tasks_gallery if item["id"] == st.session_state.selected_task), None)
     if task:
-        header_color = "#E63946" if task["risk_level"] == "HIGH" else "#F4A000" if task["risk_level"] == "MEDIUM" else "#43AA8B"
+        header_color = "#5A6A7A"
         _, center_col, _ = st.columns([0.05, 0.9, 0.05])
         with center_col:
             st.markdown("<div id='hf-task-detail-top' style='height:1px; margin:0; padding:0; scroll-margin-top:72px;'></div>", unsafe_allow_html=True)
@@ -84,16 +84,6 @@ if st.session_state.selected_task is not None:
                     st.session_state.selected_task = None
                     st.rerun()
 
-            color = "#E63946" if task["risk_level"] == "HIGH" else "#F4D35E" if task["risk_level"] == "MEDIUM" else "#43AA8B"
-            risk_text = f"{task['risk_level']} RISK"
-            st.markdown(
-                f"""
-                <div style='background: {color}; color: white; padding: 8px 12px; border-radius: 4px; display: inline-block; margin: 10px 0;'>
-                    <strong>{risk_text}</strong>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
             st.markdown(f"**AI AGENT CAPABILITY:** {task['capability']}")
             st.markdown(f"**EXAMPLE TECHNOLOGY:** {task['example_tech']}")
             st.markdown("**RISK ANALYSIS:**")
@@ -112,8 +102,7 @@ else:
     st.session_state.last_scrolled_task_id = None
 
 st.markdown("---")
-risk_rank = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
-ordered_tasks = sorted(tasks_gallery, key=lambda item: (risk_rank.get(item.get("risk_level"), 1), item.get("id", 0)))
+ordered_tasks = list(tasks_gallery)
 n_cols = 5
 n_rows = max(1, (len(ordered_tasks) + n_cols - 1) // n_cols)
 columns_tasks = [[None for _ in range(n_rows)] for _ in range(n_cols)]
@@ -127,12 +116,7 @@ for index, task in enumerate(ordered_tasks):
     columns_tasks[col_i][row_i] = task
 
 
-def risk_color(level):
-    if level == "HIGH":
-        return "#E63946"
-    if level == "MEDIUM":
-        return "#F4A000"
-    return "#43AA8B"
+NEUTRAL_COLOR = "#5A6A7A"
 
 
 st.markdown(
@@ -153,17 +137,7 @@ st.markdown(
         transform: translateY(-4px);
         box-shadow: 0 8px 16px rgba(0,0,0,0.2);
     }
-    .risk-gradient-hint {
-        margin: 0 0 14px 0;
-        padding: 8px 12px;
-        border-radius: 8px;
-        background: linear-gradient(90deg, #E63946 0%, #F4A000 50%, #43AA8B 100%);
-        color: #fff;
-        font-weight: 700;
-        text-align: center;
-        letter-spacing: 0.2px;
-        font-size: 12px;
-    }
+
     .stButton > button {
         font-weight: 600;
         padding: 10px 20px;
@@ -185,21 +159,18 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown("<div class='risk-gradient-hint'>RED → GREEN (serpentine layout)</div>", unsafe_allow_html=True)
-
-
 def render_task_cell(task):
-    color = risk_color(task.get("risk_level"))
-    risk_text = task.get("risk_level", "MEDIUM")
     st.markdown(
         f"""
         <div class='task-card-wrapper'>
-            <div class='task-card' style='background: linear-gradient(135deg, {color} 0%, {color} 100%);
-                 color: white; padding: 18px; border-radius: 8px; min-height: 98px;
-                 display: flex; align-items: center; justify-content: center; text-align: center;'>
-                <div style='font-weight: 700; font-size: 13px; line-height: 1.3;'>
-                    {task['title']}<br>
-                    <span style='font-size: 11px; opacity: 0.9;'>[{risk_text}]</span>
+            <div class='task-card' style='background: {NEUTRAL_COLOR};
+                 color: white; padding: 18px; border-radius: 8px; height: 110px; box-sizing: border-box;
+                 display: flex; align-items: center; justify-content: center; text-align: center;
+                 overflow: hidden;'>
+                <div style='font-weight: 700; font-size: 13px; line-height: 1.4;
+                            overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4;
+                            -webkit-box-orient: vertical; word-break: break-word;'>
+                    {task['title']}
                 </div>
             </div>
         </div>
