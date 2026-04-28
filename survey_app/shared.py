@@ -1410,10 +1410,14 @@ def validate_final_submission_data():
 
 
 @st.cache_data(show_spinner=False, ttl=30)
-def load_task_pairs():
+@st.cache_data(show_spinner=False, ttl=30)
+def load_task_pairs(occupation_id=None):
     db = SessionLocal()
     try:
-        pairs = db.query(TaskPairs).filter(TaskPairs.is_active == True).order_by(TaskPairs.pair_order).all()
+        query = db.query(TaskPairs).filter(TaskPairs.is_active == True)
+        if occupation_id:
+            query = query.filter(TaskPairs.occupation_id == occupation_id)
+        pairs = query.order_by(TaskPairs.pair_order).all()
         result = []
         for pair in pairs:
             left = db.query(OccupationTask.task_id, OccupationTask.task_name, OccupationTask.task_description).filter(
@@ -1527,7 +1531,7 @@ def get_runtime_db_display_text(status):
 
 def render_runtime_status_banner(page_number):
     db_tasks = load_tasks(st.session_state.get("job_role")) if page_number >= 4 else []
-    db_pairs_preview = load_task_pairs() if page_number >= 7 else []
+    db_pairs_preview = load_task_pairs(st.session_state.get("selected_occupation_id")) if page_number >= 7 else []
     runtime_db = get_runtime_db_status() if page_number >= 1 else {"connected": False, "database": "unknown", "error": ""}
     task_gallery_source = "DB" if db_tasks else "MOCK"
     task_pairs_source = "DB" if db_pairs_preview else "MOCK"
@@ -1563,7 +1567,7 @@ def get_tasks_gallery_for_ui():
 
 
 def get_task_pairs_for_ui():
-    db_pairs = load_task_pairs() if st.session_state.page >= 7 else []
+    db_pairs = load_task_pairs(st.session_state.get("selected_occupation_id")) if st.session_state.page >= 7 else []
     return db_pairs if db_pairs else MOCK_PAIRS
 
 
