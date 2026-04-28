@@ -84,16 +84,14 @@ if st.session_state.selected_task is not None:
                     st.session_state.selected_task = None
                     st.rerun()
 
-            st.markdown(f"**AI AGENT CAPABILITY:** {task['capability']}")
-            st.markdown(f"**EXAMPLE TECHNOLOGY:** {task['example_tech']}")
-            st.markdown("**RISK ANALYSIS:**")
-            st.markdown(task["risk_analysis"])
-            st.markdown("**Task Dimensions:**")
-            dimensions_emojis = {"Mental": "🧠", "Individual": "👤", "Routine": "📋", "Easy": "😊"}
-            cols = st.columns(len(task["dimensions"]))
-            for idx, dim in enumerate(task["dimensions"]):
-                with cols[idx]:
-                    st.markdown(f"{dimensions_emojis.get(dim, '')} {dim}")
+            st.markdown("**Task Description:**")
+            st.markdown(task["description"])
+            raw_justification = task["risk_analysis"]
+            import re as _re
+            _exposure_match = _re.search(r'Exposure:\s*(.*?)\s*M/P:', raw_justification, _re.IGNORECASE | _re.DOTALL)
+            exposure_text = _exposure_match.group(1).strip() if _exposure_match else raw_justification
+            st.markdown("**Exposure:**")
+            st.markdown(exposure_text)
             if st.button("More →", key=f"task_more_{task['id']}"):
                 queue_task_event(task["id"], "open_more")
                 st.session_state.selected_task = None
