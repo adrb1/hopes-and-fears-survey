@@ -770,6 +770,8 @@ def ensure_session_state():
                 st.session_state[key] = dict(value)
             elif isinstance(value, list):
                 st.session_state[key] = list(value)
+            elif isinstance(value, set):
+                st.session_state[key] = set(value)
             else:
                 st.session_state[key] = value
 
