@@ -90,7 +90,7 @@ if st.session_state.selected_task is not None:
             import re as _re
             _exposure_match = _re.search(r'Exposure:\s*(.*?)\s*M/P:', raw_justification, _re.IGNORECASE | _re.DOTALL)
             exposure_text = _exposure_match.group(1).strip() if _exposure_match else raw_justification
-            st.markdown("**Exposure:**")
+            st.markdown("**Task Description:**")
             st.markdown(exposure_text)
             if st.button("More →", key=f"task_more_{task['id']}"):
                 queue_task_event(task["id"], "open_more")
