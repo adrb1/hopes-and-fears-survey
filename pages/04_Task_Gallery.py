@@ -21,16 +21,7 @@ st.markdown(
             <h2 style='margin: 0; font-weight: bold; letter-spacing: 2px; color: #43AA8B;'>WHOSE HOPES?</h2>
         </div>
         <h1 style='font-size: 28px; font-weight: bold; margin-top: 20px;'>TASK AUTOMATION GALLERY</h1>
-        <p style='color: #666; margin-top: 10px; max-width: 600px; margin-left: auto; margin-right: auto; line-height: 1.6;'>
-            Below are tasks commonly performed in your profession. Click on at least 5 cards to learn more about them. Take a moment to explore before moving on. Take a moment to explore before moving on.
-            <br><br>
-            Tasks are sourced from the 
-            <a href='https://www.onetcenter.org/dictionary/30.2/excel/task_statements.html' target='_blank' 
-               style='color: #43AA8B; font-weight: 600; text-decoration: underline;'>
-               O*NET occupational database
-            </a>, 
-            a publicly available resource developed by the U.S. Department of Labor.
-        </p>
+        <p style='color: #666; margin-top: 10px;'>Click and read about your job automation potential</p>
     </div>
     """,
     unsafe_allow_html=True,
