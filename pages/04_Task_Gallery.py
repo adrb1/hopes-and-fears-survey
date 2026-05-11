@@ -21,7 +21,7 @@ st.markdown(
             <h2 style='margin: 0; font-weight: bold; letter-spacing: 2px; color: #43AA8B;'>WHOSE HOPES?</h2>
         </div>
         <h1 style='font-size: 28px; font-weight: bold; margin-top: 20px;'>TASK AUTOMATION GALLERY</h1>
-        <p style='color: #666; margin-top: 10px;'>Below are tasks commonly performed in your profession. Click each card to learn more about it. Take a moment to explore before moving on.</p>
+        <p style='color: #666; margin-top: 10px;'>Click and read about your job automation potential</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -84,13 +84,13 @@ if st.session_state.selected_task is not None:
                     st.session_state.selected_task = None
                     st.rerun()
 
-            #st.markdown("**Task Description:**")
-            #st.markdown(task["description"])
+            st.markdown("**Task Description:**")
+            st.markdown(task["description"])
             raw_justification = task["risk_analysis"]
             import re as _re
             _exposure_match = _re.search(r'Exposure:\s*(.*?)\s*M/P:', raw_justification, _re.IGNORECASE | _re.DOTALL)
             exposure_text = _exposure_match.group(1).strip() if _exposure_match else raw_justification
-            st.markdown("**Task Description:**")
+            st.markdown("**Exposure:**")
             st.markdown(exposure_text)
             if st.button("More →", key=f"task_more_{task['id']}"):
                 queue_task_event(task["id"], "open_more")
