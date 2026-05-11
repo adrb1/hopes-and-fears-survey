@@ -84,8 +84,8 @@ if st.session_state.selected_task is not None:
                     st.session_state.selected_task = None
                     st.rerun()
 
-            st.markdown("**Task Description:**")
-            st.markdown(task["description"])
+            #st.markdown("**Task Description:**")
+            #st.markdown(task["description"])
             raw_justification = task["risk_analysis"]
             import re as _re
             _exposure_match = _re.search(r'Exposure:\s*(.*?)\s*M/P:', raw_justification, _re.IGNORECASE | _re.DOTALL)
