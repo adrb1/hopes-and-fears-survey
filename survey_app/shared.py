@@ -583,7 +583,7 @@ class Occupation(Base):
 
 
 class OccupationTask(Base):
-    __tablename__ = "occupation_tasks"
+    __tablename__ = "occupation_tasks_edited"
 
     task_id = Column(BigInteger, primary_key=True, autoincrement=True)
     occupation_id = Column(Integer, ForeignKey("occupations.occupation_id"), nullable=False)
@@ -674,7 +674,7 @@ class ParticipantTaskGalleryEvents(Base):
     __tablename__ = "participant_task_gallery_events"
     event_id = Column(BigInteger, primary_key=True, autoincrement=True)
     participant_id = Column(BigInteger, ForeignKey("participants.participant_id"), nullable=False)
-    task_id = Column(BigInteger, ForeignKey("occupation_tasks.task_id"), nullable=False)
+    task_id = Column(BigInteger, ForeignKey("occupation_tasks_edited.task_id"), nullable=False)
     event_type = Column(Enum("view", "open_more", "close", "hover", name="participant_task_gallery_events_event_type_enum"), nullable=False)
     event_time = Column(DateTime, nullable=False, default=datetime.utcnow, server_default=text("CURRENT_TIMESTAMP"))
     participant = relationship("Participant", back_populates="gallery_events")
@@ -696,8 +696,8 @@ class TaskPairs(Base):
     __tablename__ = "task_pairs"
     pair_id = Column(BigInteger, primary_key=True, autoincrement=True)
     occupation_id = Column(Integer, ForeignKey("occupations.occupation_id"), nullable=False)
-    left_task_id = Column(BigInteger, ForeignKey("occupation_tasks.task_id"), nullable=False)
-    right_task_id = Column(BigInteger, ForeignKey("occupation_tasks.task_id"), nullable=False)
+    left_task_id = Column(BigInteger, ForeignKey("occupation_tasks_edited.task_id"), nullable=False)
+    right_task_id = Column(BigInteger, ForeignKey("occupation_tasks_edited.task_id"), nullable=False)
     pair_order = Column(Integer, nullable=False)
     is_active = Column(Boolean, nullable=False, default=True, server_default=text("1"))
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow, server_default=text("CURRENT_TIMESTAMP"))
