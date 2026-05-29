@@ -694,14 +694,15 @@ class ParticipantAIBehavior(Base):
 
 class TaskPairs(Base):
     __tablename__ = "task_pairs"
+
     pair_id = Column(BigInteger, primary_key=True, autoincrement=True)
     occupation_id = Column(Integer, ForeignKey("occupations.occupation_id"), nullable=False)
     left_task_id = Column(BigInteger, ForeignKey("occupation_tasks_edited.task_id"), nullable=False)
     right_task_id = Column(BigInteger, ForeignKey("occupation_tasks_edited.task_id"), nullable=False)
+    dimension = Column(String(50), nullable=False)
     pair_order = Column(Integer, nullable=False)
     is_active = Column(Boolean, nullable=False, default=True, server_default=text("1"))
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow, server_default=text("CURRENT_TIMESTAMP"))
-
 
 class ParticipantTaskPairChoices(Base):
     __tablename__ = "participant_task_pair_choices"
@@ -1410,15 +1411,16 @@ def validate_final_submission_data():
 
 
 @st.cache_data(show_spinner=False, ttl=30)
-@st.cache_data(show_spinner=False, ttl=30)
-@st.cache_data(show_spinner=False, ttl=30)
 def load_task_pairs(occupation_id=None, dimension="Exposure"):
+    if not occupation_id:
+        return []
+
     db = SessionLocal()
     try:
         LeftTask = aliased(OccupationTask)
         RightTask = aliased(OccupationTask)
 
-        query = (
+        rows = (
             db.query(
                 TaskPairs.pair_id,
                 TaskPairs.occupation_id,
@@ -1436,17 +1438,13 @@ def load_task_pairs(occupation_id=None, dimension="Exposure"):
             .join(LeftTask, LeftTask.task_id == TaskPairs.left_task_id)
             .join(RightTask, RightTask.task_id == TaskPairs.right_task_id)
             .filter(TaskPairs.is_active == True)
+            .filter(TaskPairs.occupation_id == occupation_id)
+            .filter(TaskPairs.dimension == dimension)
             .filter(LeftTask.is_active == True)
             .filter(RightTask.is_active == True)
+            .order_by(TaskPairs.pair_order.asc(), TaskPairs.pair_id.asc())
+            .all()
         )
-
-        if occupation_id:
-            query = query.filter(TaskPairs.occupation_id == occupation_id)
-
-        if dimension:
-            query = query.filter(TaskPairs.dimension == dimension)
-
-        rows = query.order_by(TaskPairs.pair_order.asc(), TaskPairs.pair_id.asc()).all()
 
         return [
             {
@@ -1468,7 +1466,7 @@ def load_task_pairs(occupation_id=None, dimension="Exposure"):
         ]
 
     except Exception as exc:
-        st.warning(f"Could not load task pairs from DB: {exc}")
+        st.error(f"Could not load task pairs from DB: {exc}")
         return []
     finally:
         db.close()
@@ -1600,8 +1598,18 @@ def get_tasks_gallery_for_ui():
 
 
 def get_task_pairs_for_ui():
-    db_pairs = load_task_pairs(st.session_state.get("selected_occupation_id")) if st.session_state.page >= 7 else []
+    occupation_id = st.session_state.get("selected_occupation_id")
+
+    if st.session_state.page < 7:
+        return MOCK_PAIRS
+
+    if not occupation_id:
+        st.warning("No occupation selected, so task pairs cannot be loaded.")
+        return MOCK_PAIRS
+
+    db_pairs = load_task_pairs(occupation_id, dimension="Exposure")
     return db_pairs if db_pairs else MOCK_PAIRS
+
 
 
 def finalize_submission_to_db():
