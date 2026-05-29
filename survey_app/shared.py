@@ -297,6 +297,8 @@ SESSION_DEFAULTS = {
     "selected_task": None,
     "page6_question_index": 0,
     "pair_index": 0,
+    "active_pair_signature": None,
+    "reset_pair_flow": False,
     "pair_choices": {},
     "fears_rating_after": 3,
     "hopes_rating_after": 3,
