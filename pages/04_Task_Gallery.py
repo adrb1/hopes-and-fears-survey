@@ -21,8 +21,8 @@ st.markdown(
             <h2 style='margin: 0; font-weight: bold; letter-spacing: 2px; color: #43AA8B;'>WHOSE HOPES?</h2>
         </div>
         <h1 style='font-size: 28px; font-weight: bold; margin-top: 20px;'>TASK AUTOMATION GALLERY</h1>
-<p style='color: #666; margin-top: 10px;'>Each card represents a workplace task sourced from <a href='https://www.onetcenter.org/dictionary/30.3/excel/task_statements.html' target='_blank' style='color: #666; text-decoration: underline;'>O*NET</a>. Click to read what it involves and what role AI agents can currently play.</p>
-    </div>
+<p style='color: #666; margin-top: 10px;'>Each card represents a workplace task. Click to read what it involves and what role AI agents can currently play.</p>
+<p style='color: #aaa; margin-top: 6px; font-size: 13px;'>Tasks are sourced from <a href='https://www.onetonline.org' target='_blank' style='color: #aaa; text-decoration: underline;'>O*NET Online</a>.</p>    </div>
     """,
     unsafe_allow_html=True,
 )
