@@ -119,5 +119,9 @@ if page6_next:
         st.error("⚠️ Attention check: Your response to the AI Agent squirrels question suggests you may not be answering carefully. Please review your responses.")
         st.stop()
 
+  #  st.session_state.pair_index = 0
     st.session_state.pair_index = 0
+    st.session_state.pair_choices = {}
+    st.session_state.active_pair_signature = None
+    st.session_state.reset_pair_flow = True
     go_to_page(7)
