@@ -21,7 +21,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
-
+from sqlalchemy.orm import aliased, relationship, sessionmaker
 
 PAGE_PATHS = {
     0: "pages/00_Consent.py",
@@ -1411,31 +1411,64 @@ def validate_final_submission_data():
 
 @st.cache_data(show_spinner=False, ttl=30)
 @st.cache_data(show_spinner=False, ttl=30)
-def load_task_pairs(occupation_id=None):
+@st.cache_data(show_spinner=False, ttl=30)
+def load_task_pairs(occupation_id=None, dimension="Exposure"):
     db = SessionLocal()
     try:
-        query = db.query(TaskPairs).filter(TaskPairs.is_active == True)
+        LeftTask = aliased(OccupationTask)
+        RightTask = aliased(OccupationTask)
+
+        query = (
+            db.query(
+                TaskPairs.pair_id,
+                TaskPairs.occupation_id,
+                TaskPairs.dimension,
+                TaskPairs.pair_order,
+
+                LeftTask.task_id.label("left_task_id"),
+                LeftTask.task_name.label("left_title"),
+                LeftTask.task_description.label("left_description"),
+
+                RightTask.task_id.label("right_task_id"),
+                RightTask.task_name.label("right_title"),
+                RightTask.task_description.label("right_description"),
+            )
+            .join(LeftTask, LeftTask.task_id == TaskPairs.left_task_id)
+            .join(RightTask, RightTask.task_id == TaskPairs.right_task_id)
+            .filter(TaskPairs.is_active == True)
+            .filter(LeftTask.is_active == True)
+            .filter(RightTask.is_active == True)
+        )
+
         if occupation_id:
             query = query.filter(TaskPairs.occupation_id == occupation_id)
-        pairs = query.order_by(TaskPairs.pair_order).all()
-        result = []
-        for pair in pairs:
-            left = db.query(OccupationTask.task_id, OccupationTask.task_name, OccupationTask.task_description).filter(
-                OccupationTask.task_id == pair.left_task_id
-            ).first()
-            right = db.query(OccupationTask.task_id, OccupationTask.task_name, OccupationTask.task_description).filter(
-                OccupationTask.task_id == pair.right_task_id
-            ).first()
-            if left and right:
-                result.append(
-                    {
-                        "pair_id": pair.pair_id,
-                        "left": {"task_id": left.task_id, "title": left.task_name, "description": left.task_description or ""},
-                        "right": {"task_id": right.task_id, "title": right.task_name, "description": right.task_description or ""},
-                    }
-                )
-        return result
-    except Exception:
+
+        if dimension:
+            query = query.filter(TaskPairs.dimension == dimension)
+
+        rows = query.order_by(TaskPairs.pair_order.asc(), TaskPairs.pair_id.asc()).all()
+
+        return [
+            {
+                "pair_id": row.pair_id,
+                "occupation_id": row.occupation_id,
+                "dimension": row.dimension,
+                "left": {
+                    "task_id": row.left_task_id,
+                    "title": row.left_title,
+                    "description": row.left_description or "",
+                },
+                "right": {
+                    "task_id": row.right_task_id,
+                    "title": row.right_title,
+                    "description": row.right_description or "",
+                },
+            }
+            for row in rows
+        ]
+
+    except Exception as exc:
+        st.warning(f"Could not load task pairs from DB: {exc}")
         return []
     finally:
         db.close()
