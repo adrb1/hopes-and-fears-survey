@@ -113,7 +113,8 @@ def reset_pair_flow(pair_signature):
 normalize_pair_session_state()
 
 task_pairs = get_task_pairs_for_ui()
-total_pairs = len(task_pairs
+total_pairs = len(task_pairs)
+
 st.caption(
     f"DEBUG: loaded {total_pairs} pairs | "
     f"occupation_id={st.session_state.get('selected_occupation_id')} | "
