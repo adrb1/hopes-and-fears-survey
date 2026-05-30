@@ -113,7 +113,14 @@ def reset_pair_flow(pair_signature):
 normalize_pair_session_state()
 
 task_pairs = get_task_pairs_for_ui()
-total_pairs = len(task_pairs)
+total_pairs = len(task_pairs
+st.caption(
+    f"DEBUG: loaded {total_pairs} pairs | "
+    f"occupation_id={st.session_state.get('selected_occupation_id')} | "
+    f"pair_index={st.session_state.get('pair_index')} | "
+    f"pair_ids={[pair.get('pair_id') for pair in task_pairs]} | "
+    f"dimensions={[pair.get('dimension') for pair in task_pairs]}"
+)                 
 
 # Important: if this happens, the DB pairs did not load and your app is showing MOCK_PAIRS.
 # MOCK_PAIRS has exactly 3 items, which is why you were seeing only 3 selections.
